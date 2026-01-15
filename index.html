@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rezsivezérlő 2.0 | Napi Kerettel</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+    <style>
+        body { font-family: 'Manrope', sans-serif; background-color: #0f172a; color: #e2e8f0; }
+        .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.08); }
+        .glass-input { background: rgba(15, 23, 42, 0.6); border: 1px solid #334155; color: white; transition: all 0.2s; }
+        .glass-input:focus { outline: none; border-color: #6366f1; background: rgba(15, 23, 42, 0.9); }
+
+        .glass-orange { border-color: rgba(249, 115, 22, 0.3); }
+        .input-orange:focus { border-color: #f97316; }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 10px; }
+        [v-cloak] { display: none; }
+        .fade-enter-active, .fade-leave-active { transition: opacity 0.3s ease; }
+        .fade-enter-from, .fade-leave-to { opacity: 0; }
+
+        .custom-checkbox { appearance: none; background-color: #1e293b; margin: 0; font: inherit; color: currentColor; width: 1.3em; height: 1.3em; border: 2px solid #6366f1; border-radius: 0.25em; display: grid; place-content: center; cursor: pointer; transition: all 0.2s; }
+        .custom-checkbox::before { content: ""; width: 0.75em; height: 0.75em; transform: scale(0); transition: 120ms transform ease-in-out; box-shadow: inset 1em 1em white; transform-origin: center; clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%); }
+        .custom-checkbox:checked::before { transform: scale(1); }
+        .custom-checkbox:checked { background-color: #6366f1; border-color: #6366f1; }
+        .line-through-gray { text-decoration: line-through; color: #64748b; }
+
+        .pulse-border { animation: pulse-border 2s infinite; }
+        @keyframes pulse-border {
+            0% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(99, 102, 241, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0); }
+        }
+    </style>
+</head>
+<body>
+
+<div id="app" v-cloak class="min-h-screen flex flex-col">
+
+    <div v-if="!user" class="flex-1 flex items-center justify-center p-4 relative overflow-hidden">
+        <div class="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-indigo-900/20 to-slate-900 -z-10"></div>
+        <div class="glass p-8 rounded-2xl shadow-2xl max-w-md w-full border-t border-indigo-500/20">
+            <h1 class="text-3xl font-bold text-white mb-2">Rezsivezérlő</h1>
+            <p class="text-slate-400 mb-8">Jelentkezz be a folytatáshoz.</p>
+            <form @submit.prevent="handleAuth" class="space-y-4">
+                <div v-if="authError" class="p-3 bg-red-500/10 text-red-400 rounded text-sm text-center">{{ authError }}</div>
+                <input v-model="email" type="email" required placeholder="Email cím" class="glass-input w-full p-3 rounded-lg">
+                <input v-model="password" type="password" required placeholder="Jelszó" class="glass-input w-full p-3 rounded-lg">
+                <button class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 rounded-lg transition">
+                    {{ isRegistering ? 'Regisztráció' : 'Belépés' }}
+                </button>
+            </form>
+            <div class="mt-6 text-center">
+                <button @click="isRegistering = !isRegistering" class="text-sm text-indigo-400 hover:text-indigo-300">
+                    {{ isRegistering ? 'Van már fiókod? Belépés' : 'Nincs fiókod? Regisztráció' }}
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div v-else class="flex h-screen overflow-hidden">
+
+        <aside class="w-64 glass border-r border-slate-700/50 flex flex-col hidden md:flex z-20">
+            <div class="p-6 border-b border-slate-700/50">
+                <h2 class="text-xl font-bold text-white">Rezsi<span class="text-indigo-500">.io</span></h2>
+                <p class="text-xs text-slate-500 mt-1">{{ user.email }}</p>
+            </div>
+            <nav class="flex-1 p-4 space-y-2">
+                <button @click="currentView = 'dashboard'" :class="currentView === 'dashboard' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:bg-slate-800'" class="w-full text-left p-3 rounded-lg flex items-center gap-3 transition">
+                    <i class="ph-bold ph-chart-pie-slice text-xl"></i> Áttekintés
+                </button>
+                <button @click="currentView = 'planning'" :class="currentView === 'planning' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:bg-slate-800'" class="w-full text-left p-3 rounded-lg flex items-center gap-3 transition">
+                    <i class="ph-bold ph-notebook text-xl"></i> Tervezés
+                </button>
+            </nav>
+            <div class="p-4 border-t border-slate-700/50">
+                <button @click="logout" class="w-full p-2 text-slate-500 hover:text-red-400 flex items-center gap-2 transition text-sm">
+                    <i class="ph-bold ph-sign-out"></i> Kijelentkezés
+                </button>
+            </div>
+        </aside>
+
+        <div class="md:hidden fixed top-0 w-full glass z-50 p-4 flex justify-between items-center">
+            <span class="font-bold text-lg">Rezsi.io</span>
+            <div class="flex gap-4">
+                <button @click="currentView = 'dashboard'" :class="currentView === 'dashboard' ? 'text-indigo-400' : 'text-slate-400'"><i class="ph-bold ph-chart-pie-slice text-2xl"></i></button>
+                <button @click="currentView = 'planning'" :class="currentView === 'planning' ? 'text-indigo-400' : 'text-slate-400'"><i class="ph-bold ph-notebook text-2xl"></i></button>
+                <button @click="logout" class="text-red-400"><i class="ph-bold ph-sign-out text-2xl"></i></button>
+            </div>
+        </div>
+
+        <main class="flex-1 overflow-y-auto p-4 lg:p-8 pt-20 md:pt-8 relative">
+
+            <div class="max-w-6xl mx-auto space-y-6 animate-fade-in">
+
+                <div class="flex flex-col md:flex-row justify-between items-center gap-4 mb-4">
+                    <div class="glass px-4 py-2 rounded-lg flex items-center gap-4">
+                        <button @click="changeMonth(-1)" class="text-slate-400 hover:text-white"><i class="ph-bold ph-caret-left text-xl"></i></button>
+                        <span class="font-bold text-lg uppercase tracking-wide w-32 text-center">{{ formattedMonth }}</span>
+                        <button @click="changeMonth(1)" class="text-slate-400 hover:text-white"><i class="ph-bold ph-caret-right text-xl"></i></button>
+                    </div>
+                    <div class="flex items-center gap-2 glass p-2 rounded-lg">
+                        <span class="text-slate-400 text-sm ml-2">Havi keret:</span>
+                        <input v-model.number="monthlyIncome" @change="saveIncome" type="number" class="bg-transparent border-none text-right font-bold text-emerald-400 focus:ring-0 w-32" placeholder="0">
+                        <span class="text-slate-500 pr-2">RON</span>
+                    </div>
+                </div>
+
+                <div v-if="currentView === 'dashboard'" class="space-y-6 animate-fade-in">
+
+                    <div class="glass p-0 rounded-xl border border-indigo-500/20 bg-indigo-900/10 overflow-hidden">
+                        <div class="p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+                            <div class="flex items-center gap-3">
+                                <div class="p-3 bg-indigo-500 rounded-lg text-white shadow-lg pulse-border">
+                                    <i class="ph-bold ph-money text-2xl"></i>
+                                </div>
+                                <div>
+                                    <p class="text-xs text-indigo-300 font-bold uppercase tracking-wider">Következő fizetés</p>
+                                    <p class="text-white font-bold flex items-center gap-2">
+                                        {{ paydayDisplay.date }}
+                                        <span class="text-slate-400 font-normal text-sm">({{ paydayDisplay.dayName }})</span>
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2 bg-slate-900/50 px-4 py-2 rounded-lg border border-white/5">
+                                <span class="text-2xl font-bold text-white">{{ paydayDisplay.daysLeft }}</span>
+                                <span class="text-sm text-slate-400">nap van hátra</span>
+                            </div>
+                        </div>
+
+                        <div class="bg-indigo-950/30 p-3 border-t border-indigo-500/20 flex justify-between items-center px-6">
+                            <span class="text-indigo-300 text-sm font-bold uppercase tracking-wider flex items-center">
+                                <i class="ph-bold ph-wallet mr-2"></i>Napi keret a fizetésig:
+                            </span>
+                            <span class="text-xl font-bold" :class="dailyBudget >= 0 ? 'text-white' : 'text-red-400'">
+                                {{ formatCurrency(dailyBudget) }} <span class="text-xs text-slate-400 font-normal">/ nap</span>
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="md:col-span-2 glass p-6 rounded-xl relative">
+                            <h3 class="text-sm font-semibold text-slate-400 mb-4">Kiadások eloszlása (Számlák + Részletek)</h3>
+                            <div class="h-64">
+                                <canvas id="expenseChart"></canvas>
+                            </div>
+                        </div>
+
+                        <div class="glass p-6 rounded-xl flex flex-col justify-center space-y-6">
+                            <div>
+                                <p class="text-slate-400 text-xs uppercase tracking-wider">Teljes kötelezettség</p>
+                                <p class="text-3xl font-bold text-white mt-1">{{ formatCurrency(totalObligations) }}</p>
+
+                                <div class="mt-2 text-sm text-orange-400 flex items-center gap-2 bg-orange-500/10 p-2 rounded border border-orange-500/20" v-if="totalInstallments > 0">
+                                    <i class="ph-fill ph-warning-circle"></i>
+                                    <span>Ebből részlet: <b>{{ formatCurrency(totalInstallments) }}</b></span>
+                                </div>
+
+                                <div class="w-full bg-slate-700 h-1.5 rounded-full mt-3 overflow-hidden">
+                                    <div class="h-full bg-indigo-500" :style="{ width: Math.min(billsPercentage, 100) + '%' }"></div>
+                                </div>
+                                <p class="text-xs text-indigo-300 mt-1">{{ billsPercentage }}% a keretből</p>
+                            </div>
+
+                            <div>
+                                <p class="text-slate-400 text-xs uppercase tracking-wider">Szabadon elkölthető</p>
+                                <p class="text-3xl font-bold mt-1" :class="remainingMoney >= 0 ? 'text-emerald-400' : 'text-red-400'">
+                                    {{ formatCurrency(remainingMoney) }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="glass p-6 rounded-xl">
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+                            <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                                <i class="ph-duotone ph-receipt"></i> Számlák rögzítése erre a hónapra
+                            </h3>
+                            <button @click="showProviderModal = true" class="bg-indigo-600/20 hover:bg-indigo-600/40 text-indigo-300 border border-indigo-500/30 px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition">
+                                <i class="ph-bold ph-plugs"></i> Szolgáltatók kezelése
+                            </button>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <div v-for="item in processedProviders" :key="item.provider.id" class="border border-slate-700 bg-slate-800/50 p-4 rounded-lg relative flex flex-col">
+                                <div class="absolute left-0 top-0 bottom-0 w-1" :style="{ backgroundColor: item.provider.color }"></div>
+                                <div class="flex justify-between items-start mb-3 pl-2">
+                                    <span class="font-bold text-slate-200">{{ item.provider.name }}</span>
+                                    <span class="text-xs font-mono px-2 py-1 rounded bg-slate-900 text-slate-300 shadow-sm border border-slate-700">{{ formatCurrency(item.totalAmount) }}</span>
+                                </div>
+                                <div class="flex gap-2 pl-2 mb-2">
+                                    <input v-model.number="item.tempAmount" type="number" placeholder="Összeg" class="glass-input w-full p-2 rounded text-sm" @keyup.enter="addBill(item.provider.id, item.tempAmount); item.tempAmount = ''">
+                                    <button @click="addBill(item.provider.id, item.tempAmount); item.tempAmount = ''" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3 rounded flex items-center justify-center transition shadow-lg shadow-indigo-500/20"><i class="ph-bold ph-plus"></i></button>
+                                </div>
+                                <div v-if="item.bills.length > 0" class="mt-auto pl-2 pt-3 border-t border-slate-700/50">
+                                    <div v-for="bill in item.bills" :key="bill.id" class="flex justify-between text-xs py-1 group/bill">
+                                        <span class="text-slate-300">{{ formatCurrency(bill.amount) }}</span>
+                                        <button @click="deleteBill(bill.id)" class="text-red-400 opacity-0 group-hover/bill:opacity-100"><i class="ph-bold ph-trash"></i></button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div v-if="providers.length === 0" class="col-span-full text-center p-8 text-slate-500 border border-dashed border-slate-700 rounded-lg">
+                                Még nincsenek szolgáltatók. Kattints a "Szolgáltatók kezelése" gombra a hozzáadáshoz!
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="glass glass-orange p-6 rounded-xl relative overflow-hidden">
+                        <div class="absolute top-0 right-0 w-32 h-32 bg-orange-500/10 rounded-full blur-3xl -z-10"></div>
+
+                        <h3 class="text-lg font-bold text-white mb-6 flex items-center gap-2 text-orange-400">
+                            <i class="ph-duotone ph-calendar-check"></i> Részletek fizetése
+                        </h3>
+
+                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                            <div class="glass p-4 rounded-lg bg-slate-800/40 border-slate-700">
+                                <h4 class="text-xs font-bold text-slate-400 uppercase mb-4">Új törlesztő felvétele</h4>
+                                <div class="space-y-3">
+                                    <div>
+                                        <label class="text-[10px] uppercase text-slate-500 font-bold">Megnevezés</label>
+                                        <input v-model="newInstallment.name" placeholder="pl. Hűtőgép, TV" class="glass-input input-orange w-full p-2 rounded text-sm mt-1">
+                                    </div>
+                                    <div class="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label class="text-[10px] uppercase text-slate-500 font-bold">Havi összeg</label>
+                                            <input v-model.number="newInstallment.amount" type="number" placeholder="RON" class="glass-input input-orange w-full p-2 rounded text-sm mt-1">
+                                        </div>
+                                        <div>
+                                            <label class="text-[10px] uppercase text-slate-500 font-bold">Futamidő (hó)</label>
+                                            <input v-model.number="newInstallment.months" type="number" placeholder="pl. 6" class="glass-input input-orange w-full p-2 rounded text-sm mt-1">
+                                        </div>
+                                    </div>
+                                    <button @click="addInstallment" class="w-full bg-orange-600 hover:bg-orange-500 text-white font-bold py-2.5 rounded-lg mt-2 transition shadow-lg shadow-orange-500/20">
+                                        Részlet indítása
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="lg:col-span-2">
+                                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-2">
+                                    <h4 class="text-xs font-bold text-slate-400 uppercase">Havi fizetendő</h4>
+                                    <div class="text-right">
+                                        <div class="text-orange-400 font-bold text-xl">{{ formatCurrency(totalInstallments) }} <span class="text-sm text-slate-500 font-normal">/ hó</span></div>
+                                        <div v-if="grandTotalRemaining > 0" class="text-[10px] text-slate-400 uppercase font-bold mt-1">
+                                            Teljes hátralék: <span class="text-slate-200">{{ formatCurrency(grandTotalRemaining) }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div v-if="activeInstallments.length === 0" class="text-center py-10 border border-dashed border-slate-700 rounded-lg">
+                                    <p class="text-slate-500 text-sm">Nincs aktív részletfizetés erre a hónapra.</p>
+                                </div>
+
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div v-for="inst in activeInstallments" :key="inst.id" class="glass p-4 rounded-lg border-l-4 border-orange-500 relative group flex flex-col">
+                                        <div class="flex justify-between items-start mb-2">
+                                            <h5 class="font-bold text-white truncate pr-2">{{ inst.name }}</h5>
+                                            <span class="font-mono font-bold text-orange-200 bg-orange-500/20 px-2 py-1 rounded text-xs whitespace-nowrap">{{ formatCurrency(inst.monthlyAmount) }}</span>
+                                        </div>
+                                        <div class="flex justify-between text-xs text-slate-400 mb-1">
+                                            <span>Állapot:</span>
+                                            <span>{{ inst.currentMonth }} / {{ inst.totalMonths }}. hónap</span>
+                                        </div>
+                                        <div class="w-full bg-slate-700 h-1.5 rounded-full overflow-hidden mb-3">
+                                            <div class="h-full bg-orange-500 transition-all duration-500" :style="{ width: (inst.currentMonth / inst.totalMonths * 100) + '%' }"></div>
+                                        </div>
+                                        <div class="mt-auto pt-2 border-t border-slate-700/50 flex justify-between items-center">
+                                            <span class="text-[10px] uppercase text-slate-500 font-bold">Még hátra:</span>
+                                            <span class="text-xs font-bold text-slate-300">{{ formatCurrency(inst.remainingTotal) }}</span>
+                                        </div>
+                                        <button @click="deleteInstallment(inst.id)" class="absolute top-2 right-2 text-slate-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition bg-slate-900 rounded p-1 shadow">
+                                            <i class="ph-bold ph-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div v-if="currentView === 'planning'" class="space-y-6 animate-fade-in">
+
+                    <h2 class="text-2xl font-bold text-white flex items-center gap-2">
+                        <i class="ph-duotone ph-notebook"></i> Tervezés erre a hónapra
+                    </h2>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div class="glass p-4 rounded-lg border-l-4 border-indigo-500">
+                            <p class="text-[10px] uppercase text-slate-400 font-bold">Teljes kötelezettség</p>
+                            <p class="text-xl font-bold text-white mt-1">{{ formatCurrency(totalObligations) }}</p>
+                        </div>
+                        <div class="glass p-4 rounded-lg border-l-4 border-emerald-500">
+                            <p class="text-[10px] uppercase text-slate-400 font-bold">Szabadon elkölthető</p>
+                            <p class="text-xl font-bold text-white mt-1" :class="remainingMoney >= 0 ? 'text-emerald-400' : 'text-red-400'">{{ formatCurrency(remainingMoney) }}</p>
+                        </div>
+                        <div class="glass p-4 rounded-lg border-l-4 border-orange-500">
+                            <p class="text-[10px] uppercase text-slate-400 font-bold">Havi részlet</p>
+                            <p class="text-xl font-bold text-white mt-1">{{ formatCurrency(totalInstallments) }}</p>
+                        </div>
+                        <div class="glass p-4 rounded-lg border-l-4 border-red-500">
+                            <p class="text-[10px] uppercase text-slate-400 font-bold">Teljes hátralék (Future)</p>
+                            <p class="text-xl font-bold text-white mt-1">{{ formatCurrency(grandTotalRemaining) }}</p>
+                        </div>
+                    </div>
+
+                    <div class="glass p-6 rounded-xl">
+                        <p class="text-sm text-slate-400 mb-3">
+                            <i class="ph-bold ph-info"></i> Tipp: Használj <code class="bg-slate-700 px-1 rounded text-orange-400">#</code> jelet a sor elején, ha teendőt (checkbox) szeretnél létrehozni.
+                        </p>
+
+                        <div class="flex flex-col sm:flex-row gap-4 items-start">
+                            <div class="flex-1 w-full">
+                                <textarea v-model="newNoteContent" placeholder="Írd ide a jegyzeted vagy teendőidet..." class="glass-input w-full p-3 rounded-lg min-h-[80px]" @keyup.ctrl.enter="processNoteInput"></textarea>
+                                <p class="text-[10px] text-slate-500 mt-1 pl-1">Ctrl + Enter a mentéshez</p>
+                            </div>
+                            <button @click="processNoteInput" class="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-3 rounded-lg font-bold transition flex items-center gap-2">
+                                <i class="ph-bold ph-plus"></i> Hozzáadás
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="space-y-3">
+                        <div v-for="note in sortedNotes" :key="note.id" class="glass p-4 rounded-xl relative group transition hover:bg-slate-800/40 border border-transparent" :class="{'border-indigo-500/30': note.type === 'todo'}">
+                            <button @click="deleteNote(note.id)" class="absolute top-3 right-3 text-slate-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition p-1 rounded hover:bg-slate-900 z-10"><i class="ph-bold ph-trash"></i></button>
+
+                            <div v-if="note.type === 'todo'" class="flex items-center gap-3 pr-8">
+                                <input type="checkbox" :checked="note.isDone" @change="toggleTodo(note)" class="custom-checkbox shrink-0">
+                                <div class="flex-1">
+                                    <span :class="{ 'line-through-gray': note.isDone }" class="text-slate-200 font-medium transition-all block break-words">{{ note.content }}</span>
+                                    <div class="text-[10px] text-slate-500 mt-0.5">{{ note.displayDate }}</div>
+                                </div>
+                            </div>
+                            <div v-else class="pr-8">
+                                <div class="text-slate-300 whitespace-pre-wrap leading-relaxed">{{ note.content }}</div>
+                                <div class="text-[10px] text-slate-500 mt-2">{{ note.displayDate }}</div>
+                            </div>
+                        </div>
+
+                        <div v-if="sortedNotes.length === 0" class="text-center py-12">
+                            <i class="ph-duotone ph-notebook text-4xl text-slate-600 mb-2"></i>
+                            <p class="text-slate-500">Még nincs terved erre a hónapra.</p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </main>
+
+        <transition name="modal">
+            <div v-if="showProviderModal" class="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                <div class="absolute inset-0 bg-slate-900/80 backdrop-blur-sm" @click="showProviderModal = false"></div>
+                <div class="glass modal-content w-full max-w-lg rounded-2xl p-6 relative z-10 shadow-2xl border border-indigo-500/30">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-2xl font-bold text-white">Szolgáltatók Beállítása</h2>
+                        <button @click="showProviderModal = false" class="text-slate-400 hover:text-white transition"><i class="ph-bold ph-x text-2xl"></i></button>
+                    </div>
+                    <div class="glass p-4 rounded-xl mb-6 bg-slate-800/50">
+                        <form @submit.prevent="addProvider" class="flex gap-4 items-end">
+                            <div class="flex-1">
+                                <label class="text-xs text-slate-500 mb-1 block">Új szolgáltató neve</label>
+                                <input v-model="newProvider.name" type="text" required placeholder="pl. E.ON" class="glass-input w-full p-3 rounded-lg">
+                            </div>
+                            <div>
+                                <label class="text-xs text-slate-500 mb-1 block">Szín</label>
+                                <div class="h-[46px] w-[60px] relative overflow-hidden rounded-lg border border-slate-600">
+                                    <input v-model="newProvider.color" type="color" class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[150%] h-[150%] cursor-pointer">
+                                </div>
+                            </div>
+                            <button type="submit" class="bg-indigo-600 hover:bg-indigo-500 h-[46px] px-6 rounded-lg text-white font-bold transition flex items-center justify-center"><i class="ph-bold ph-plus text-lg"></i></button>
+                        </form>
+                    </div>
+                    <div class="space-y-3 max-h-[300px] overflow-y-auto pr-1 custom-scrollbar">
+                        <div v-for="prov in providers" :key="prov.id" class="glass p-3 rounded-lg flex items-center justify-between group bg-slate-800/30 hover:bg-slate-800/60 transition">
+                            <div class="flex items-center gap-4">
+                                <div class="w-6 h-6 rounded-full shadow-lg border border-white/10" :style="{ backgroundColor: prov.color }"></div>
+                                <span class="font-semibold text-slate-200">{{ prov.name }}</span>
+                            </div>
+                            <button @click="deleteProvider(prov.id)" class="text-slate-500 hover:text-red-400 transition p-2"><i class="ph-bold ph-trash text-lg"></i></button>
+                        </div>
+                        <p v-if="providers.length === 0" class="text-center text-slate-500 text-sm py-4">Még nincs rögzített szolgáltató.</p>
+                    </div>
+                </div>
+            </div>
+        </transition>
+
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+    import { getFirestore, collection, addDoc, deleteDoc, doc, query, where, onSnapshot, serverTimestamp, setDoc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDb3gUMx-X3WZUu3QYsKxcnu7bNDJy6bws",
+      authDomain: "financialsuccess-920c4.firebaseapp.com",
+      projectId: "financialsuccess-920c4",
+      storageBucket: "financialsuccess-920c4.firebasestorage.app",
+      messagingSenderId: "489041652676",
+      appId: "1:489041652676:web:191a94b9b9f66abf889291"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    const { createApp, ref, computed, watch } = Vue;
+
+    createApp({
+        setup() {
+            const user = ref(null);
+            const email = ref('');
+            const password = ref('');
+            const isRegistering = ref(false);
+            const authError = ref('');
+
+            const currentView = ref('dashboard');
+            const currentDate = ref(new Date());
+            const monthlyIncome = ref(0);
+            const showProviderModal = ref(false);
+
+            const providers = ref([]);
+            const bills = ref([]);
+            const allInstallments = ref([]);
+            const notes = ref([]);
+            const newNoteContent = ref('');
+
+            const newProvider = ref({ name: '', color: '#6366f1' });
+            const newInstallment = ref({ name: '', amount: '', months: '' });
+
+            let chart = null;
+
+            onAuthStateChanged(auth, (u) => {
+                user.value = u;
+                if (u) { initData(u.uid); } else { resetData(); }
+            });
+
+            const handleAuth = async () => {
+                authError.value = '';
+                try {
+                    if (isRegistering.value) await createUserWithEmailAndPassword(auth, email.value, password.value);
+                    else await signInWithEmailAndPassword(auth, email.value, password.value);
+                } catch (e) { authError.value = e.message; }
+            };
+            const logout = () => signOut(auth);
+
+            const initData = (uid) => {
+                onSnapshot(query(collection(db, `users/${uid}/providers`)), (snap) => {
+                    providers.value = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                });
+                onSnapshot(query(collection(db, `users/${uid}/installments`)), (snap) => {
+                    allInstallments.value = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                });
+                watch(currentMonthKey, () => {
+                    loadMonthSpecificData(uid);
+                    loadNotes(uid);
+                }, { immediate: true });
+            };
+
+            const resetData = () => {
+                providers.value = [];
+                bills.value = [];
+                allInstallments.value = [];
+                notes.value = [];
+                monthlyIncome.value = 0;
+            };
+
+            let billsUnsubscribe = null;
+            let notesUnsubscribe = null;
+
+            const loadMonthSpecificData = async (uid) => {
+                const key = currentMonthKey.value;
+                const incomeSnap = await getDoc(doc(db, `users/${uid}/budgets/${key}`));
+                monthlyIncome.value = incomeSnap.exists() ? incomeSnap.data().income : 0;
+
+                if(billsUnsubscribe) billsUnsubscribe();
+                billsUnsubscribe = onSnapshot(query(collection(db, `users/${uid}/bills`), where("monthKey", "==", key)), (snap) => {
+                    bills.value = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                });
+            };
+
+            const loadNotes = (uid) => {
+                const key = currentMonthKey.value;
+                if(notesUnsubscribe) notesUnsubscribe();
+                notesUnsubscribe = onSnapshot(query(
+                    collection(db, `users/${uid}/notes`),
+                    where("monthKey", "==", key)
+                ), (snap) => {
+                    notes.value = snap.docs.map(d => ({
+                        id: d.id,
+                        ...d.data(),
+                        displayDate: d.data().createdAt ? new Date(d.data().createdAt.toDate()).toLocaleString('hu-HU') : 'Most'
+                    }));
+                });
+            }
+
+            // --- FIZETÉS NAP SZÁMOLÓ LOGIKA ---
+            const getFifthWorkingDay = (year, month) => {
+                let date = new Date(year, month, 1);
+                let workingDays = 0;
+                while (workingDays < 5) {
+                    const dayOfWeek = date.getDay();
+                    if (dayOfWeek !== 0 && dayOfWeek !== 6) { workingDays++; }
+                    if (workingDays < 5) { date.setDate(date.getDate() + 1); }
+                }
+                return date;
+            };
+
+            const paydayDisplay = computed(() => {
+                const now = new Date();
+                const currentYear = now.getFullYear();
+                const currentMonth = now.getMonth();
+
+                let targetDate = getFifthWorkingDay(currentYear, currentMonth);
+                const todayMidnight = new Date(currentYear, currentMonth, now.getDate());
+                const targetMidnight = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate());
+
+                if (todayMidnight > targetMidnight) {
+                    targetDate = getFifthWorkingDay(currentYear, currentMonth + 1);
+                }
+
+                const diffTime = targetDate - now;
+                const daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+                return {
+                    daysLeft: daysLeft > 0 ? daysLeft : 0,
+                    date: targetDate.toLocaleDateString('hu-HU', { month: 'long', day: 'numeric' }),
+                    dayName: targetDate.toLocaleDateString('hu-HU', { weekday: 'long' })
+                };
+            });
+
+            // --- ÚJ: NAPI KERET SZÁMÍTÁS ---
+            const dailyBudget = computed(() => {
+                const days = paydayDisplay.value.daysLeft;
+                // Ha 0 vagy kevesebb nap van, akkor a teljes maradék összeg a mai.
+                // Ha a maradék negatív, akkor is osztunk, hogy lássuk a napi hiányt.
+                if (days <= 0) return remainingMoney.value;
+                return remainingMoney.value / days;
+            });
+
+            const sortedNotes = computed(() => {
+                return [...notes.value].sort((a, b) => {
+                    if (!b.createdAt) return 1;
+                    if (!a.createdAt) return -1;
+                    return b.createdAt.seconds - a.createdAt.seconds;
+                });
+            });
+
+            const currentMonthKey = computed(() => {
+                const y = currentDate.value.getFullYear();
+                const m = String(currentDate.value.getMonth() + 1).padStart(2, '0');
+                return `${y}-${m}`;
+            });
+
+            const formattedMonth = computed(() => currentDate.value.toLocaleDateString('hu-HU', { year: 'numeric', month: 'long' }));
+
+            const changeMonth = (delta) => {
+                const d = new Date(currentDate.value);
+                d.setMonth(d.getMonth() + delta);
+                currentDate.value = d;
+            };
+
+            const getMonthDiff = (startKey, currentKey) => {
+                const [y1, m1] = startKey.split('-').map(Number);
+                const [y2, m2] = currentKey.split('-').map(Number);
+                return (y2 - y1) * 12 + (m2 - m1);
+            };
+
+            const activeInstallments = computed(() => {
+                return allInstallments.value.map(inst => {
+                    if (!inst.startMonthKey) return null;
+                    const diff = getMonthDiff(inst.startMonthKey, currentMonthKey.value);
+                    if (diff >= 0 && diff < inst.totalMonths) {
+                        const remainingTotal = (inst.totalMonths - diff) * inst.monthlyAmount;
+                        return { ...inst, currentMonth: diff + 1, remainingTotal };
+                    }
+                    return null;
+                }).filter(i => i !== null);
+            });
+
+            const grandTotalRemaining = computed(() => activeInstallments.value.reduce((sum, i) => sum + i.remainingTotal, 0));
+            const totalInstallments = computed(() => activeInstallments.value.reduce((sum, i) => sum + i.monthlyAmount, 0));
+            const totalBills = computed(() => bills.value.reduce((sum, b) => sum + b.amount, 0));
+            const totalObligations = computed(() => totalBills.value + totalInstallments.value);
+            const remainingMoney = computed(() => monthlyIncome.value - totalObligations.value);
+            const billsPercentage = computed(() => monthlyIncome.value === 0 ? 0 : Math.round((totalObligations.value / monthlyIncome.value) * 100));
+
+            const processedProviders = computed(() => {
+                return providers.value.map(prov => {
+                    const providerBills = bills.value.filter(b => b.providerId === prov.id);
+                    return {
+                        provider: prov,
+                        bills: providerBills,
+                        totalAmount: providerBills.reduce((s, b) => s + b.amount, 0),
+                        tempAmount: ''
+                    };
+                });
+            });
+
+            const addProvider = async () => {
+                if(!newProvider.value.name) return;
+                await addDoc(collection(db, `users/${user.value.uid}/providers`), newProvider.value);
+                newProvider.value = { name: '', color: '#6366f1' };
+            };
+            const deleteProvider = async (id) => { if(confirm('Törlöd ezt a szolgáltatót?')) await deleteDoc(doc(db, `users/${user.value.uid}/providers`, id)); };
+
+            const addBill = async (pId, amt) => {
+                if(!amt) return;
+                await addDoc(collection(db, `users/${user.value.uid}/bills`), {
+                    providerId: pId, amount: parseFloat(amt), monthKey: currentMonthKey.value, createdAt: serverTimestamp()
+                });
+            };
+            const deleteBill = async (id) => await deleteDoc(doc(db, `users/${user.value.uid}/bills`, id));
+            const saveIncome = async () => { await setDoc(doc(db, `users/${user.value.uid}/budgets/${currentMonthKey.value}`), { income: monthlyIncome.value }, { merge: true }); };
+
+            const addInstallment = async () => {
+                const { name, amount, months } = newInstallment.value;
+                if (!name || !amount || !months) return;
+                await addDoc(collection(db, `users/${user.value.uid}/installments`), {
+                    name, monthlyAmount: parseFloat(amount), totalMonths: parseInt(months), startMonthKey: currentMonthKey.value, createdAt: serverTimestamp()
+                });
+                newInstallment.value = { name: '', amount: '', months: '' };
+            };
+            const deleteInstallment = async (id) => { if(confirm('Törlöd a részletfizetést végleg?')) await deleteDoc(doc(db, `users/${user.value.uid}/installments`, id)); };
+
+            const processNoteInput = async () => {
+                const rawText = newNoteContent.value.trim();
+                if(!rawText) return;
+                const lines = rawText.split('\n');
+                for (let line of lines) {
+                    line = line.trim();
+                    if (!line) continue;
+                    let type = 'text';
+                    let content = line;
+                    let isDone = false;
+                    if (line.startsWith('#')) {
+                        type = 'todo';
+                        content = line.substring(1).trim();
+                    }
+                    await addDoc(collection(db, `users/${user.value.uid}/notes`), {
+                        content: content,
+                        type: type,
+                        isDone: isDone,
+                        monthKey: currentMonthKey.value,
+                        createdAt: serverTimestamp()
+                    });
+                }
+                newNoteContent.value = '';
+            };
+
+            const toggleTodo = async (note) => {
+                await updateDoc(doc(db, `users/${user.value.uid}/notes`, note.id), {
+                    isDone: !note.isDone
+                });
+            };
+
+            const deleteNote = async (id) => {
+                if(confirm('Biztosan törlöd ezt a bejegyzést?')) {
+                    await deleteDoc(doc(db, `users/${user.value.uid}/notes`, id));
+                }
+            };
+
+            const updateChart = () => {
+                const ctx = document.getElementById('expenseChart');
+                if (!ctx || currentView.value !== 'dashboard') return;
+
+                const labels = processedProviders.value.map(p => p.provider.name);
+                const data = processedProviders.value.map(p => p.totalAmount);
+                const colors = processedProviders.value.map(p => p.provider.color);
+
+                if (totalInstallments.value > 0) {
+                    labels.push('Részletek');
+                    data.push(totalInstallments.value);
+                    colors.push('#f97316');
+                }
+
+                if (chart) chart.destroy();
+
+                chart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels,
+                        datasets: [{
+                            label: 'Kiadás (RON)',
+                            data: data,
+                            backgroundColor: colors,
+                            borderRadius: 6,
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: '#94a3b8' } },
+                            x: { grid: { display: false }, ticks: { color: '#e2e8f0' } }
+                        }
+                    }
+                });
+            };
+
+            watch([bills, totalInstallments, providers, currentView], () => {
+                setTimeout(updateChart, 100);
+            }, { deep: true });
+
+            const formatCurrency = (val) => new Intl.NumberFormat('ro-RO', { style: 'currency', currency: 'RON', minimumFractionDigits: 0 }).format(val);
+
+            return {
+                user, email, password, isRegistering, authError, handleAuth, logout,
+                currentView,
+                providers, newProvider, addProvider, deleteProvider,
+                formattedMonth, changeMonth, monthlyIncome, saveIncome,
+                processedProviders, addBill, deleteBill,
+                totalObligations, remainingMoney, billsPercentage, formatCurrency,
+                newInstallment, addInstallment, deleteInstallment,
+                activeInstallments, totalInstallments, grandTotalRemaining,
+                showProviderModal,
+                sortedNotes, newNoteContent, processNoteInput, toggleTodo, deleteNote,
+                paydayDisplay, dailyBudget // Exportálva
+            };
+        }
+    }).mount('#app');
+</script>
+</body>
+</html>
