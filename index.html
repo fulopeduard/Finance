@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Money manager | Napi Kerettel</title>
+    <title>Money manager v15 | Napi Kerettel</title>
 
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -70,7 +70,10 @@
 
         <aside class="w-64 glass border-r border-slate-700/50 flex flex-col hidden md:flex z-20">
             <div class="p-6 border-b border-slate-700/50">
-                <h2 class="text-xl font-bold text-white">Money<span class="text-indigo-500"> manager</span></h2>
+                <div class="flex items-center justify-between">
+                    <h2 class="text-xl font-bold text-white">Money<span class="text-indigo-500"> manager</span></h2>
+                    <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-bold">v15</span>
+                </div>
                 <p class="text-xs text-slate-500 mt-1">{{ user.email }}</p>
             </div>
             <nav class="flex-1 p-4 space-y-2">
@@ -95,7 +98,10 @@
         </aside>
 
         <div class="md:hidden fixed top-0 w-full glass z-50 p-4 flex justify-between items-center">
-            <span class="font-bold text-lg">Money manager</span>
+            <div class="flex items-center gap-2">
+                <span class="font-bold text-lg">Money manager</span>
+                <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-bold">v15</span>
+            </div>
             <div class="flex gap-4">
                 <button @click="currentView = 'dashboard'" :class="currentView === 'dashboard' ? 'text-indigo-400' : 'text-slate-400'"><i class="ph-bold ph-chart-pie-slice text-2xl"></i></button>
                 <button @click="currentView = 'planning'" :class="currentView === 'planning' ? 'text-indigo-400' : 'text-slate-400'"><i class="ph-bold ph-notebook text-2xl"></i></button>
@@ -131,7 +137,13 @@
                                     <i class="ph-bold ph-money text-2xl"></i>
                                 </div>
                                 <div>
-                                    <p class="text-xs text-indigo-300 font-bold uppercase tracking-wider">Következő fizetés</p>
+                                    <div class="flex items-center gap-2">
+                                        <p class="text-xs text-indigo-300 font-bold uppercase tracking-wider">Következő fizetés</p>
+                                        <button @click="showSettingsModal = true" title="Fizetésnap testreszabása a Beállításokban" class="text-slate-400 hover:text-indigo-300 transition text-xs flex items-center gap-1 bg-indigo-950/60 px-1.5 py-0.5 rounded border border-indigo-500/20">
+                                            <i class="ph-bold ph-pencil-simple"></i>
+                                            <span class="text-[10px] hidden sm:inline">Módosítás</span>
+                                        </button>
+                                    </div>
                                     <p class="text-white font-bold flex items-center gap-2">
                                         {{ paydayDisplay.date }}
                                         <span class="text-slate-400 font-normal text-sm">({{ paydayDisplay.dayName }})</span>
@@ -139,8 +151,8 @@
                                 </div>
                             </div>
                             <div class="flex items-center gap-2 bg-slate-900/50 px-4 py-2 rounded-lg border border-white/5">
-                                <span class="text-2xl font-bold text-white">{{ paydayDisplay.daysLeft }}</span>
-                                <span class="text-sm text-slate-400">nap van hátra</span>
+                                <span class="text-2xl font-bold text-white">{{ paydayDisplay.daysLeft === 0 ? 'Ma!' : paydayDisplay.daysLeft }}</span>
+                                <span class="text-sm text-slate-400">{{ paydayDisplay.daysLeft === 0 ? 'fizetésnap!' : 'nap van hátra' }}</span>
                             </div>
                         </div>
 
@@ -183,6 +195,12 @@
                                 <p class="text-3xl font-bold mt-1" :class="remainingMoney >= 0 ? 'text-emerald-400' : 'text-red-400'">
                                     {{ formatCurrency(remainingMoney) }}
                                 </p>
+                                <div v-if="notesStats.net !== 0" class="mt-1 text-xs text-slate-400 flex flex-wrap items-center gap-1">
+                                    <span>Alap: {{ formatCurrency(baseRemainingMoney) }}</span>
+                                    <span :class="notesStats.net > 0 ? 'text-emerald-400' : 'text-rose-400'" class="font-medium">
+                                        ({{ notesStats.net > 0 ? '+' : '' }}{{ formatCurrency(notesStats.net) }} jegyzetekből)
+                                    </span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -296,7 +314,7 @@
 
                 <div v-if="currentView === 'planning'" class="space-y-6 animate-fade-in">
 
-                    <h2 class="text-2xl font-bold text-white flex items-center gap-2">
+                    <h2 class="text-2xl font-bold text-white flex items-center gap-2 mb-6">
                         <i class="ph-duotone ph-notebook"></i> Tervezés erre a hónapra
                     </h2>
 
@@ -308,6 +326,10 @@
                         <div class="glass p-4 rounded-lg border-l-4 border-emerald-500">
                             <p class="text-[10px] uppercase text-slate-400 font-bold">Szabadon elkölthető</p>
                             <p class="text-xl font-bold text-white mt-1" :class="remainingMoney >= 0 ? 'text-emerald-400' : 'text-red-400'">{{ formatCurrency(remainingMoney) }}</p>
+                            <p v-if="notesStats.net !== 0" class="text-[10px] text-slate-400 mt-1">
+                                Alap: {{ formatCurrency(baseRemainingMoney) }}
+                                <span :class="notesStats.net > 0 ? 'text-emerald-400' : 'text-rose-400'">({{ notesStats.net > 0 ? '+' : '' }}{{ formatCurrency(notesStats.net) }})</span>
+                            </p>
                         </div>
                         <div class="glass p-4 rounded-lg border-l-4 border-orange-500">
                             <p class="text-[10px] uppercase text-slate-400 font-bold">Havi részlet</p>
@@ -319,14 +341,40 @@
                         </div>
                     </div>
 
+                    <!-- Jegyzetek pénzügyi összesítő banner, ha van felismert összeg -->
+                    <div v-if="notesStats.income > 0 || notesStats.expense > 0" class="glass p-4 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border border-indigo-500/30 bg-indigo-950/30">
+                        <div class="flex items-center gap-3">
+                            <div class="p-2.5 rounded-lg bg-indigo-600/30 text-indigo-400 border border-indigo-500/20">
+                                <i class="ph-bold ph-scales text-xl"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs text-slate-400 uppercase font-bold tracking-wider">Jegyzetek egyenlege erre a hónapra</p>
+                                <p class="text-lg font-bold" :class="notesStats.net >= 0 ? 'text-emerald-400' : 'text-rose-400'">
+                                    {{ notesStats.net >= 0 ? '+' : '' }}{{ formatCurrency(notesStats.net) }}
+                                </p>
+                            </div>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-3 text-xs">
+                            <div v-if="notesStats.income > 0" class="flex items-center gap-1.5 text-emerald-300 bg-emerald-500/10 px-3 py-1.5 rounded-lg border border-emerald-500/20 font-medium">
+                                <i class="ph-bold ph-plus-circle text-emerald-400"></i>
+                                <span>Bevételek: <b>+{{ formatCurrency(notesStats.income) }}</b></span>
+                            </div>
+                            <div v-if="notesStats.expense > 0" class="flex items-center gap-1.5 text-rose-300 bg-rose-500/10 px-3 py-1.5 rounded-lg border border-rose-500/20 font-medium">
+                                <i class="ph-bold ph-minus-circle text-rose-400"></i>
+                                <span>Kiadások: <b>-{{ formatCurrency(notesStats.expense) }}</b></span>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="glass p-6 rounded-xl">
-                        <p class="text-sm text-slate-400 mb-3">
-                            <i class="ph-bold ph-info"></i> Tipp: Használj <code class="bg-slate-700 px-1 rounded text-orange-400">#</code> jelet a sor elején, ha teendőt (checkbox) szeretnél létrehozni.
+                        <p class="text-sm text-slate-400 mb-3 leading-relaxed">
+                            <i class="ph-bold ph-info text-indigo-400 mr-1"></i>
+                            Tipp: Használj <code class="bg-slate-700 px-1.5 py-0.5 rounded text-orange-400">#</code> jelet a sor elején teendőkhöz. Írj a jegyzetbe összegeket előjellel, pl. <code class="bg-emerald-900/40 text-emerald-300 border border-emerald-500/30 px-1.5 py-0.5 rounded font-mono">+3000 RON</code> vagy <code class="bg-rose-900/40 text-rose-300 border border-rose-500/30 px-1.5 py-0.5 rounded font-mono">-1500 RON</code>, és a rendszer automatikusan hozzáadja vagy levonja a havi keretedből!
                         </p>
 
                         <div class="flex flex-col sm:flex-row gap-4 items-start">
                             <div class="flex-1 w-full">
-                                <textarea v-model="newNoteContent" placeholder="Írd ide a jegyzeted vagy teendőidet..." class="glass-input w-full p-3 rounded-lg min-h-[80px]" @keyup.ctrl.enter="processNoteInput"></textarea>
+                                <textarea v-model="newNoteContent" placeholder="Írd ide a jegyzeted vagy teendőidet (pl. Eladni a hangfalat +3000 RON)..." class="glass-input w-full p-3 rounded-lg min-h-[80px]" @keyup.ctrl.enter="processNoteInput"></textarea>
                                 <p class="text-[10px] text-slate-500 mt-1 pl-1">Ctrl + Enter a mentéshez</p>
                             </div>
                             <button @click="processNoteInput" class="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-3 rounded-lg font-bold transition flex items-center gap-2">
@@ -337,17 +385,60 @@
 
                     <div class="space-y-3">
                         <div v-for="note in sortedNotes" :key="note.id" class="glass p-4 rounded-xl relative group transition hover:bg-slate-800/40 border border-transparent" :class="{'border-indigo-500/30': note.type === 'todo'}">
-                            <button @click="deleteNote(note.id)" class="absolute top-3 right-3 text-slate-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition p-1 rounded hover:bg-slate-900 z-10"><i class="ph-bold ph-trash"></i></button>
+                            
+                            <!-- Műveleti gombok (szerkesztés és törlés) -->
+                            <div class="absolute top-3 right-3 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition z-10">
+                                <button v-if="editingNoteId !== note.id" @click="startEditNote(note)" class="text-slate-500 hover:text-indigo-400 p-1 rounded hover:bg-slate-900 transition" title="Jegyzet szerkesztése">
+                                    <i class="ph-bold ph-pencil-simple text-sm"></i>
+                                </button>
+                                <button @click="deleteNote(note.id)" class="text-slate-500 hover:text-red-400 p-1 rounded hover:bg-slate-900 transition" title="Törlés">
+                                    <i class="ph-bold ph-trash text-sm"></i>
+                                </button>
+                            </div>
 
-                            <div v-if="note.type === 'todo'" class="flex items-center gap-3 pr-8">
-                                <input type="checkbox" :checked="note.isDone" @change="toggleTodo(note)" class="custom-checkbox shrink-0">
-                                <div class="flex-1">
-                                    <span :class="{ 'line-through-gray': note.isDone }" class="text-slate-200 font-medium transition-all block break-words">{{ note.content }}</span>
-                                    <div class="text-[10px] text-slate-500 mt-0.5">{{ note.displayDate }}</div>
+                            <!-- Szerkesztő mód -->
+                            <div v-if="editingNoteId === note.id" class="pr-2 space-y-2">
+                                <textarea v-model="editingNoteContent" class="glass-input w-full p-2.5 rounded-lg text-sm text-slate-200 min-h-[60px]" @keyup.ctrl.enter="saveEditNote(note.id)"></textarea>
+                                <div class="flex justify-end gap-2">
+                                    <button @click="cancelEditNote" class="px-3 py-1 text-xs text-slate-400 hover:text-white rounded bg-slate-800 transition">Mégse</button>
+                                    <button @click="saveEditNote(note.id)" class="px-3 py-1 text-xs text-white bg-indigo-600 hover:bg-indigo-500 rounded font-bold transition">Mentés</button>
                                 </div>
                             </div>
-                            <div v-else class="pr-8">
-                                <div class="text-slate-300 whitespace-pre-wrap leading-relaxed">{{ note.content }}</div>
+
+                            <!-- Megjelenítés: Teendő (Todo) -->
+                            <div v-else-if="note.type === 'todo'" class="flex items-start gap-3 pr-16">
+                                <input type="checkbox" :checked="note.isDone" @change="toggleTodo(note)" class="custom-checkbox shrink-0 mt-0.5">
+                                <div class="flex-1 min-w-0">
+                                    <span :class="{ 'line-through-gray': note.isDone }" class="text-slate-200 font-medium transition-all block break-words">{{ note.content }}</span>
+                                    
+                                    <!-- Felismert összegek címkéi -->
+                                    <div v-if="getNoteAmounts(note.content).length > 0" class="flex flex-wrap gap-1.5 mt-2">
+                                        <span v-for="(amt, idx) in getNoteAmounts(note.content)" :key="idx"
+                                              :class="amt > 0 ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' : 'bg-rose-500/15 text-rose-300 border-rose-500/30'"
+                                              class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold border font-mono">
+                                            <i :class="amt > 0 ? 'ph-bold ph-plus-circle text-emerald-400' : 'ph-bold ph-minus-circle text-rose-400'"></i>
+                                            {{ amt > 0 ? '+' : '' }}{{ formatCurrency(amt) }}
+                                        </span>
+                                    </div>
+
+                                    <div class="text-[10px] text-slate-500 mt-1">{{ note.displayDate }}</div>
+                                </div>
+                            </div>
+
+                            <!-- Megjelenítés: Sima szöveges jegyzet -->
+                            <div v-else class="pr-16">
+                                <div class="text-slate-300 whitespace-pre-wrap leading-relaxed break-words">{{ note.content }}</div>
+
+                                <!-- Felismert összegek címkéi -->
+                                <div v-if="getNoteAmounts(note.content).length > 0" class="flex flex-wrap gap-1.5 mt-2">
+                                    <span v-for="(amt, idx) in getNoteAmounts(note.content)" :key="idx"
+                                          :class="amt > 0 ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' : 'bg-rose-500/15 text-rose-300 border-rose-500/30'"
+                                          class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold border font-mono">
+                                        <i :class="amt > 0 ? 'ph-bold ph-plus-circle text-emerald-400' : 'ph-bold ph-minus-circle text-rose-400'"></i>
+                                        {{ amt > 0 ? '+' : '' }}{{ formatCurrency(amt) }}
+                                    </span>
+                                </div>
+
                                 <div class="text-[10px] text-slate-500 mt-2">{{ note.displayDate }}</div>
                             </div>
                         </div>
@@ -578,27 +669,112 @@
         <transition name="modal">
             <div v-if="showSettingsModal" class="fixed inset-0 z-[100] flex items-center justify-center p-4">
                 <div class="absolute inset-0 bg-slate-900/80 backdrop-blur-sm" @click="showSettingsModal = false"></div>
-                <div class="glass modal-content w-full max-w-sm rounded-2xl p-6 relative z-10 shadow-2xl border border-indigo-500/30">
-                    <div class="flex justify-between items-center mb-6">
-                        <h2 class="text-xl font-bold text-white">Beállítások</h2>
-                        <button @click="showSettingsModal = false" class="text-slate-400 hover:text-white transition"><i class="ph-bold ph-x text-xl"></i></button>
+                <div class="glass modal-content w-full max-w-md rounded-2xl p-6 relative z-10 shadow-2xl border border-indigo-500/30 max-h-[90vh] overflow-y-auto">
+                    <div class="flex justify-between items-center mb-6 pb-3 border-b border-slate-700/50">
+                        <div>
+                            <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                                <i class="ph-bold ph-gear text-indigo-400"></i> Beállítások
+                            </h2>
+                            <p class="text-xs text-slate-400 mt-0.5">Személyre szabott pénzügyi működés</p>
+                        </div>
+                        <button @click="showSettingsModal = false" class="text-slate-400 hover:text-white transition p-1 rounded hover:bg-slate-800"><i class="ph-bold ph-x text-xl"></i></button>
                     </div>
-                    <div class="space-y-4">
-                        <p class="text-sm text-slate-400 mb-2">Alapértelmezett kezdőképernyő</p>
-                        <div class="flex flex-col gap-2">
-                            <label class="flex items-center gap-3 p-3 bg-slate-800/50 rounded-lg cursor-pointer border border-transparent hover:border-indigo-500/30 transition">
-                                <input type="radio" v-model="userSettings.defaultView" value="dashboard" @change="saveSettings" class="accent-indigo-500 w-4 h-4">
-                                <span class="text-slate-200 text-sm"><i class="ph-bold ph-chart-pie-slice text-indigo-400 mr-2"></i>Áttekintés</span>
-                            </label>
-                            <label class="flex items-center gap-3 p-3 bg-slate-800/50 rounded-lg cursor-pointer border border-transparent hover:border-indigo-500/30 transition">
-                                <input type="radio" v-model="userSettings.defaultView" value="planning" @change="saveSettings" class="accent-indigo-500 w-4 h-4">
-                                <span class="text-slate-200 text-sm"><i class="ph-bold ph-notebook text-indigo-400 mr-2"></i>Tervezés</span>
-                            </label>
-                            <label class="flex items-center gap-3 p-3 bg-slate-800/50 rounded-lg cursor-pointer border border-transparent hover:border-indigo-500/30 transition">
-                                <input type="radio" v-model="userSettings.defaultView" value="shared" @change="saveSettings" class="accent-indigo-500 w-4 h-4">
-                                <span class="text-slate-200 text-sm"><i class="ph-bold ph-users text-indigo-400 mr-2"></i>Megosztott pénzügyek</span>
+
+                    <div class="space-y-6">
+
+                        <!-- SECTION 1: Fizetés napja -->
+                        <div class="space-y-3">
+                            <div class="flex items-center gap-2 text-sm font-bold text-white">
+                                <i class="ph-bold ph-calendar-check text-indigo-400 text-lg"></i>
+                                <span>Fizetés napja</span>
+                            </div>
+                            <p class="text-xs text-slate-400">Állítsd be, hogy mikor érkezik a havi fizetésed a pontos napi keret kiszámításához.</p>
+
+                            <div class="space-y-2.5">
+                                <!-- Type 1: Working day -->
+                                <label class="flex items-start gap-3 p-3 bg-slate-800/50 rounded-xl cursor-pointer border transition" :class="userSettings.paydayType !== 'calendarDay' ? 'border-indigo-500/50 bg-slate-800/80' : 'border-transparent hover:border-slate-700'">
+                                    <input type="radio" v-model="userSettings.paydayType" value="workingDay" @change="saveSettings" class="accent-indigo-500 w-4 h-4 mt-1">
+                                    <div class="flex-1 text-sm">
+                                        <div class="font-semibold text-slate-200">A hónap N. munkanapja <span class="text-xs text-indigo-400 font-normal">(Alapértelmezett)</span></div>
+                                        <div class="text-xs text-slate-400 mt-0.5">Kihagyja a hétvégéket, csak munkanapokat számol</div>
+                                        <div v-if="userSettings.paydayType !== 'calendarDay'" class="mt-3 flex items-center gap-3">
+                                            <span class="text-xs text-slate-300">Hányadik munkanap:</span>
+                                            <input type="number" min="1" max="25" v-model.number="userSettings.paydayWorkingDay" @change="saveSettings" class="glass-input w-20 px-2.5 py-1.5 rounded-lg text-center text-sm font-bold text-indigo-300">
+                                            <span class="text-xs text-slate-400">. munkanap</span>
+                                        </div>
+                                    </div>
+                                </label>
+
+                                <!-- Type 2: Calendar day -->
+                                <label class="flex items-start gap-3 p-3 bg-slate-800/50 rounded-xl cursor-pointer border transition" :class="userSettings.paydayType === 'calendarDay' ? 'border-indigo-500/50 bg-slate-800/80' : 'border-transparent hover:border-slate-700'">
+                                    <input type="radio" v-model="userSettings.paydayType" value="calendarDay" @change="saveSettings" class="accent-indigo-500 w-4 h-4 mt-1">
+                                    <div class="flex-1 text-sm">
+                                        <div class="font-semibold text-slate-200">A hónap fix naptári napja</div>
+                                        <div class="text-xs text-slate-400 mt-0.5">Pl. minden hónap 10-e, 15-e, 25-e stb.</div>
+                                        <div v-if="userSettings.paydayType === 'calendarDay'" class="mt-3 space-y-3">
+                                            <div class="flex items-center gap-3">
+                                                <span class="text-xs text-slate-300">Hónap napja:</span>
+                                                <input type="number" min="1" max="31" v-model.number="userSettings.paydayCalendarDay" @change="saveSettings" class="glass-input w-20 px-2.5 py-1.5 rounded-lg text-center text-sm font-bold text-indigo-300">
+                                                <span class="text-xs text-slate-400">. napja</span>
+                                            </div>
+                                            <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer pt-1">
+                                                <input type="checkbox" v-model="userSettings.paydayAdjustWeekend" @change="saveSettings" class="custom-checkbox shrink-0">
+                                                <span>Ha hétvégére esik, az előző munkanap legyen (péntek)</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </label>
+                            </div>
+
+                            <!-- Live preview of calculated payday -->
+                            <div class="p-3 rounded-lg bg-indigo-950/40 border border-indigo-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-xs">
+                                <span class="text-indigo-300 flex items-center gap-1.5">
+                                    <i class="ph-bold ph-clock"></i> Következő esedékes fizetés:
+                                </span>
+                                <span class="font-bold text-white">
+                                    {{ paydayDisplay.date }} ({{ paydayDisplay.dayName }}) • 
+                                    <span class="text-indigo-400">{{ paydayDisplay.daysLeft === 0 ? 'Ma!' : paydayDisplay.daysLeft + ' nap van hátra' }}</span>
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- SECTION 2: Jegyzetek összegeinek kezelése -->
+                        <div class="space-y-3 pt-4 border-t border-slate-700/50">
+                            <div class="flex items-center gap-2 text-sm font-bold text-white">
+                                <i class="ph-bold ph-notebook text-indigo-400 text-lg"></i>
+                                <span>Jegyzetek és tervezés</span>
+                            </div>
+                            <label class="flex items-center gap-3 p-3 bg-slate-800/50 rounded-xl cursor-pointer border border-transparent hover:border-slate-700 transition">
+                                <input type="checkbox" v-model="userSettings.includeCompletedTodos" @change="saveSettings" class="custom-checkbox shrink-0">
+                                <div class="text-xs text-slate-300">
+                                    <div class="font-semibold text-slate-200">Pipált (teljesített) teendők összegének beszámítása</div>
+                                    <div class="text-slate-400 mt-0.5">Ha be van kapcsolva, a pipált teendők összegei is módosítják a havi keretet</div>
+                                </div>
                             </label>
                         </div>
+
+                        <!-- SECTION 3: Alapértelmezett kezdőképernyő -->
+                        <div class="space-y-3 pt-4 border-t border-slate-700/50">
+                            <div class="flex items-center gap-2 text-sm font-bold text-white">
+                                <i class="ph-bold ph-browsers text-indigo-400 text-lg"></i>
+                                <span>Alapértelmezett kezdőképernyő</span>
+                            </div>
+                            <div class="flex flex-col gap-2">
+                                <label class="flex items-center gap-3 p-2.5 bg-slate-800/50 rounded-lg cursor-pointer border border-transparent hover:border-indigo-500/30 transition">
+                                    <input type="radio" v-model="userSettings.defaultView" value="dashboard" @change="saveSettings" class="accent-indigo-500 w-4 h-4">
+                                    <span class="text-slate-200 text-sm flex items-center gap-2"><i class="ph-bold ph-chart-pie-slice text-indigo-400"></i>Áttekintés</span>
+                                </label>
+                                <label class="flex items-center gap-3 p-2.5 bg-slate-800/50 rounded-lg cursor-pointer border border-transparent hover:border-indigo-500/30 transition">
+                                    <input type="radio" v-model="userSettings.defaultView" value="planning" @change="saveSettings" class="accent-indigo-500 w-4 h-4">
+                                    <span class="text-slate-200 text-sm flex items-center gap-2"><i class="ph-bold ph-notebook text-indigo-400"></i>Tervezés</span>
+                                </label>
+                                <label class="flex items-center gap-3 p-2.5 bg-slate-800/50 rounded-lg cursor-pointer border border-transparent hover:border-indigo-500/30 transition">
+                                    <input type="radio" v-model="userSettings.defaultView" value="shared" @change="saveSettings" class="accent-indigo-500 w-4 h-4">
+                                    <span class="text-slate-200 text-sm flex items-center gap-2"><i class="ph-bold ph-users text-indigo-400"></i>Megosztott pénzügyek</span>
+                                </label>
+                            </div>
+                        </div>
+
                     </div>
                 </div>
             </div>
@@ -737,9 +913,20 @@
                 user.value = u;
                 if (u) { 
                     const prefSnap = await getDoc(doc(db, `users/${u.uid}/settings/preferences`));
-                    if (prefSnap.exists() && prefSnap.data().defaultView) {
-                        userSettings.value = prefSnap.data();
-                        currentView.value = userSettings.value.defaultView;
+                    if (prefSnap.exists()) {
+                        const data = prefSnap.data();
+                        userSettings.value = {
+                            defaultView: data.defaultView || 'dashboard',
+                            paydayType: data.paydayType || 'workingDay',
+                            paydayWorkingDay: data.paydayWorkingDay !== undefined ? data.paydayWorkingDay : 5,
+                            paydayCalendarDay: data.paydayCalendarDay !== undefined ? data.paydayCalendarDay : 10,
+                            paydayAdjustWeekend: data.paydayAdjustWeekend !== undefined ? data.paydayAdjustWeekend : true,
+                            includeCompletedTodos: data.includeCompletedTodos !== undefined ? data.includeCompletedTodos : true,
+                            ...data
+                        };
+                        if (userSettings.value.defaultView) {
+                            currentView.value = userSettings.value.defaultView;
+                        }
                     }
                     initData(u.uid); 
                 } else { 
@@ -838,33 +1025,76 @@
                 });
             }
 
-            // --- FIZETÉS NAP SZÁMOLÓ LOGIKA ---
-            const getFifthWorkingDay = (year, month) => {
-                let date = new Date(year, month, 1);
-                let workingDays = 0;
-                while (workingDays < 5) {
-                    const dayOfWeek = date.getDay();
-                    if (dayOfWeek !== 0 && dayOfWeek !== 6) { workingDays++; }
-                    if (workingDays < 5) { date.setDate(date.getDate() + 1); }
+            // --- FIZETÉS NAP SZÁMOLÓ MOTOR (SZEMÉLYRE SZABHATÓ) ---
+            const calculatePaydayDate = (year, month, settings) => {
+                const s = settings || {};
+                const type = s.paydayType || 'workingDay';
+
+                if (type === 'calendarDay') {
+                    const requestedDay = parseInt(s.paydayCalendarDay) || 10;
+                    const lastDay = new Date(year, month + 1, 0).getDate();
+                    const targetDay = Math.min(Math.max(requestedDay, 1), lastDay);
+                    let targetDate = new Date(year, month, targetDay);
+
+                    if (s.paydayAdjustWeekend !== false) {
+                        const dow = targetDate.getDay();
+                        if (dow === 6) { // Szombat -> Péntek
+                            targetDate.setDate(targetDate.getDate() - 1);
+                        } else if (dow === 0) { // Vasárnap -> Péntek
+                            targetDate.setDate(targetDate.getDate() - 2);
+                        }
+                        if (targetDate.getMonth() !== month) {
+                            targetDate = new Date(year, month, 1);
+                            while (targetDate.getDay() === 0 || targetDate.getDay() === 6) {
+                                targetDate.setDate(targetDate.getDate() + 1);
+                            }
+                        }
+                    }
+                    return targetDate;
+                } else {
+                    // Munkanap alapú számítás (alapértelmezett: 5. munkanap)
+                    const targetCount = parseInt(s.paydayWorkingDay) || 5;
+                    let targetDate = new Date(year, month, 1);
+                    let workingDays = 0;
+                    let lastValidWorkingDay = new Date(targetDate);
+
+                    while (targetDate.getMonth() === month) {
+                        const dow = targetDate.getDay();
+                        if (dow !== 0 && dow !== 6) {
+                            workingDays++;
+                            lastValidWorkingDay = new Date(targetDate);
+                            if (workingDays === targetCount) {
+                                return targetDate;
+                            }
+                        }
+                        targetDate.setDate(targetDate.getDate() + 1);
+                    }
+                    return lastValidWorkingDay;
                 }
-                return date;
             };
 
             const paydayDisplay = computed(() => {
                 const now = new Date();
                 const currentYear = now.getFullYear();
                 const currentMonth = now.getMonth();
-
-                let targetDate = getFifthWorkingDay(currentYear, currentMonth);
                 const todayMidnight = new Date(currentYear, currentMonth, now.getDate());
+
+                let targetDate = calculatePaydayDate(currentYear, currentMonth, userSettings.value);
                 const targetMidnight = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate());
 
-                if (todayMidnight > targetMidnight) {
-                    targetDate = getFifthWorkingDay(currentYear, currentMonth + 1);
+                if (todayMidnight.getTime() > targetMidnight.getTime()) {
+                    let nextMonth = currentMonth + 1;
+                    let nextYear = currentYear;
+                    if (nextMonth > 11) {
+                        nextMonth = 0;
+                        nextYear++;
+                    }
+                    targetDate = calculatePaydayDate(nextYear, nextMonth, userSettings.value);
                 }
 
-                const diffTime = targetDate - now;
-                const daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                const finalTargetMidnight = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate());
+                const diffTime = finalTargetMidnight.getTime() - todayMidnight.getTime();
+                const daysLeft = Math.round(diffTime / (1000 * 60 * 60 * 24));
 
                 return {
                     daysLeft: daysLeft > 0 ? daysLeft : 0,
@@ -873,11 +1103,75 @@
                 };
             });
 
-            // --- ÚJ: NAPI KERET SZÁMÍTÁS ---
+            // --- JEGYZET ÖSSZEG FELISMERŐ MOTOR (+ / -) ---
+            const extractAmountsFromText = (text) => {
+                if (!text || typeof text !== 'string') return [];
+
+                // Telefonszámok kizárása a vizsgálat előtt
+                let cleanText = text.replace(/\+\d{1,3}[\s-]+\d{2,4}[\s-]+\d{3,}/g, ' ');
+
+                // Szám minta: ezres tagolás szóközzel vagy ponttal, vagy tizedessel
+                const numPat = '(?:\\d{1,3}(?:\\s\\d{3})+(?:[.,]\\d{1,2})?|\\d{1,3}(?:\\.\\d{3})+(?:,\\d{1,2})?|\\d+(?:[.,]\\d+)?)';
+                const regex = new RegExp('(?:^|[\\s,;:(])([+-])\\s*(' + numPat + ')\\s*(?:ron|lei|huf|ft|eur|\\$|€)?(?=[\\s,;.:)]|$)', 'gi');
+
+                let match;
+                const results = [];
+                while ((match = regex.exec(cleanText)) !== null) {
+                    const sign = match[1] === '-' ? -1 : 1;
+                    let numStr = match[2].replace(/\s/g, '');
+                    if (numStr.includes(',') && numStr.includes('.')) {
+                        if (numStr.lastIndexOf(',') > numStr.lastIndexOf('.')) {
+                            numStr = numStr.replace(/\./g, '').replace(',', '.');
+                        } else {
+                            numStr = numStr.replace(/,/g, '');
+                        }
+                    } else if (numStr.includes(',')) {
+                        numStr = numStr.replace(',', '.');
+                    } else if (numStr.includes('.')) {
+                        const parts = numStr.split('.');
+                        if (parts.length > 1 && parts.slice(1).every(p => p.length === 3)) {
+                            numStr = parts.join('');
+                        }
+                    }
+                    const val = parseFloat(numStr);
+                    if (!isNaN(val) && val > 0) {
+                        results.push(sign * val);
+                    }
+                }
+                return results;
+            };
+
+            const getNoteAmounts = (content) => {
+                return extractAmountsFromText(content);
+            };
+
+            const notesStats = computed(() => {
+                let income = 0;
+                let expense = 0;
+                const includeCompleted = userSettings.value.includeCompletedTodos !== false;
+                for (const note of notes.value) {
+                    if (note.type === 'todo' && note.isDone && !includeCompleted) {
+                        continue;
+                    }
+                    const amounts = extractAmountsFromText(note.content);
+                    for (const amt of amounts) {
+                        if (amt > 0) {
+                            income += amt;
+                        } else {
+                            expense += Math.abs(amt);
+                        }
+                    }
+                }
+                return {
+                    income,
+                    expense,
+                    net: income - expense
+                };
+            });
+
+            // --- NAPI KERET SZÁMÍTÁS ---
             const dailyBudget = computed(() => {
                 const days = paydayDisplay.value.daysLeft;
-                // Ha 0 vagy kevesebb nap van, akkor a teljes maradék összeg a mai.
-                // Ha a maradék negatív, akkor is osztunk, hogy lássuk a napi hiányt.
                 if (days <= 0) return remainingMoney.value;
                 return remainingMoney.value / days;
             });
@@ -972,15 +1266,33 @@
 
 
             const showSettingsModal = ref(false);
-            const userSettings = ref({ defaultView: 'dashboard' });
+            const userSettings = ref({
+                defaultView: 'dashboard',
+                paydayType: 'workingDay',
+                paydayWorkingDay: 5,
+                paydayCalendarDay: 10,
+                paydayAdjustWeekend: true,
+                includeCompletedTodos: true
+            });
 
             const saveSettings = async () => {
                 try {
-                    await setDoc(doc(db, `users/${user.value.uid}/settings/preferences`), userSettings.value, { merge: true });
+                    if (user.value) {
+                        await setDoc(doc(db, `users/${user.value.uid}/settings/preferences`), userSettings.value, { merge: true });
+                    }
                 } catch (e) {
                     console.error("Hiba beállítások mentésekor", e);
                 }
             };
+
+            watch(() => userSettings.value.paydayWorkingDay, (val) => {
+                if (val && val < 1) userSettings.value.paydayWorkingDay = 1;
+                if (val && val > 25) userSettings.value.paydayWorkingDay = 25;
+            });
+            watch(() => userSettings.value.paydayCalendarDay, (val) => {
+                if (val && val < 1) userSettings.value.paydayCalendarDay = 1;
+                if (val && val > 31) userSettings.value.paydayCalendarDay = 31;
+            });
             
             const addShared = async () => {
                 try {
@@ -1114,7 +1426,8 @@
             const totalInstallments = computed(() => activeInstallments.value.reduce((sum, i) => sum + i.monthlyAmount, 0));
             const totalBills = computed(() => bills.value.reduce((sum, b) => sum + b.amount, 0));
             const totalObligations = computed(() => totalBills.value + totalInstallments.value);
-            const remainingMoney = computed(() => monthlyIncome.value - totalObligations.value);
+            const baseRemainingMoney = computed(() => monthlyIncome.value - totalObligations.value);
+            const remainingMoney = computed(() => baseRemainingMoney.value + notesStats.value.net);
             const billsPercentage = computed(() => monthlyIncome.value === 0 ? 0 : Math.round((totalObligations.value / monthlyIncome.value) * 100));
 
             const processedProviders = computed(() => {
@@ -1189,6 +1502,34 @@
             const deleteNote = async (id) => {
                 if(confirm('Biztosan törlöd ezt a bejegyzést?')) {
                     await deleteDoc(doc(db, `users/${user.value.uid}/notes`, id));
+                }
+            };
+
+            // Jegyzet szerkesztési funkciók
+            const editingNoteId = ref(null);
+            const editingNoteContent = ref('');
+
+            const startEditNote = (note) => {
+                editingNoteId.value = note.id;
+                editingNoteContent.value = note.content;
+            };
+
+            const cancelEditNote = () => {
+                editingNoteId.value = null;
+                editingNoteContent.value = '';
+            };
+
+            const saveEditNote = async (id) => {
+                const text = editingNoteContent.value.trim();
+                if (!text) return;
+                try {
+                    await updateDoc(doc(db, `users/${user.value.uid}/notes`, id), {
+                        content: text
+                    });
+                    editingNoteId.value = null;
+                    editingNoteContent.value = '';
+                } catch (e) {
+                    alert('Hiba mentéskor: ' + e.message);
                 }
             };
 
@@ -1383,6 +1724,8 @@
                 activeShared, newShared, addShared, deleteShared, addSharedPayment, deleteSharedPayment, openEditShared, saveEditShared, showEditSharedModal, editingShared, showSettingsModal, userSettings, saveSettings, editingPaymentId, editingPaymentAmount, editingPaymentComment, startPaymentEdit, showJoinModal, joinCode, joinShared, copyShareCode, cancelPaymentEdit, savePaymentEdit,
 
                 sortedNotes, newNoteContent, processNoteInput, toggleTodo, deleteNote,
+                editingNoteId, editingNoteContent, startEditNote, cancelEditNote, saveEditNote,
+                getNoteAmounts, notesStats, baseRemainingMoney,
                 paydayDisplay, dailyBudget // Exportálva
             };
         }
