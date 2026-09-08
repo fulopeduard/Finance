@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Money manager v15 | Napi Kerettel</title>
+    <title>Money manager v17 | Napi Kerettel</title>
 
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -72,13 +72,16 @@
             <div class="p-6 border-b border-slate-700/50">
                 <div class="flex items-center justify-between">
                     <h2 class="text-xl font-bold text-white">Money<span class="text-indigo-500"> manager</span></h2>
-                    <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-bold">v15</span>
+                    <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-bold">v17</span>
                 </div>
                 <p class="text-xs text-slate-500 mt-1">{{ user.email }}</p>
             </div>
             <nav class="flex-1 p-4 space-y-2">
                 <button @click="currentView = 'dashboard'" :class="currentView === 'dashboard' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:bg-slate-800'" class="w-full text-left p-3 rounded-lg flex items-center gap-3 transition">
                     <i class="ph-bold ph-chart-pie-slice text-xl"></i> Áttekintés
+                </button>
+                <button @click="currentView = 'income'" :class="currentView === 'income' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:bg-slate-800'" class="w-full text-left p-3 rounded-lg flex items-center gap-3 transition">
+                    <i class="ph-bold ph-wallet text-xl"></i> Bevételek
                 </button>
                 <button @click="currentView = 'planning'" :class="currentView === 'planning' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:bg-slate-800'" class="w-full text-left p-3 rounded-lg flex items-center gap-3 transition">
                     <i class="ph-bold ph-notebook text-xl"></i> Tervezés
@@ -100,14 +103,15 @@
         <div class="md:hidden fixed top-0 w-full glass z-50 p-4 flex justify-between items-center">
             <div class="flex items-center gap-2">
                 <span class="font-bold text-lg">Money manager</span>
-                <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-bold">v15</span>
+                <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-bold">v17</span>
             </div>
-            <div class="flex gap-4">
-                <button @click="currentView = 'dashboard'" :class="currentView === 'dashboard' ? 'text-indigo-400' : 'text-slate-400'"><i class="ph-bold ph-chart-pie-slice text-2xl"></i></button>
-                <button @click="currentView = 'planning'" :class="currentView === 'planning' ? 'text-indigo-400' : 'text-slate-400'"><i class="ph-bold ph-notebook text-2xl"></i></button>
-                <button @click="currentView = 'shared'" :class="currentView === 'shared' ? 'text-indigo-400' : 'text-slate-400'"><i class="ph-bold ph-users text-2xl"></i></button>
-                <button @click="showSettingsModal = true" class="text-slate-400"><i class="ph-bold ph-gear text-2xl"></i></button>
-                <button @click="logout" class="text-red-400"><i class="ph-bold ph-sign-out text-2xl"></i></button>
+            <div class="flex gap-3 items-center">
+                <button @click="currentView = 'dashboard'" :class="currentView === 'dashboard' ? 'text-indigo-400' : 'text-slate-400'" title="Áttekintés"><i class="ph-bold ph-chart-pie-slice text-2xl"></i></button>
+                <button @click="currentView = 'income'" :class="currentView === 'income' ? 'text-indigo-400' : 'text-slate-400'" title="Bevételek"><i class="ph-bold ph-wallet text-2xl"></i></button>
+                <button @click="currentView = 'planning'" :class="currentView === 'planning' ? 'text-indigo-400' : 'text-slate-400'" title="Tervezés"><i class="ph-bold ph-notebook text-2xl"></i></button>
+                <button @click="currentView = 'shared'" :class="currentView === 'shared' ? 'text-indigo-400' : 'text-slate-400'" title="Megosztott"><i class="ph-bold ph-users text-2xl"></i></button>
+                <button @click="showSettingsModal = true" class="text-slate-400" title="Beállítások"><i class="ph-bold ph-gear text-2xl"></i></button>
+                <button @click="logout" class="text-red-400" title="Kijelentkezés"><i class="ph-bold ph-sign-out text-2xl"></i></button>
             </div>
         </div>
 
@@ -121,10 +125,14 @@
                         <span class="font-bold text-lg uppercase tracking-wide w-32 text-center">{{ formattedMonth }}</span>
                         <button @click="changeMonth(1)" class="text-slate-400 hover:text-white"><i class="ph-bold ph-caret-right text-xl"></i></button>
                     </div>
-                    <div class="flex items-center gap-2 glass p-2 rounded-lg">
-                        <span class="text-slate-400 text-sm ml-2">Havi keret:</span>
-                        <input v-model.number="monthlyIncome" @change="saveIncome" type="number" class="bg-transparent border-none text-right font-bold text-emerald-400 focus:ring-0 w-32" placeholder="0">
-                        <span class="text-slate-500 pr-2">RON</span>
+                    <div class="flex items-center gap-2 glass p-2 rounded-lg cursor-pointer hover:border-indigo-500/40 transition group" @click="currentView = 'income'" title="Kattints a részletes bevételek és fix fizetések megnyitásához">
+                        <span class="text-slate-400 text-sm ml-2 group-hover:text-indigo-300 transition flex items-center gap-1.5">
+                            <i class="ph-bold ph-wallet text-indigo-400"></i> Havi keret:
+                        </span>
+                        <span class="font-bold text-emerald-400 px-2 py-0.5 text-base">{{ formatCurrency(monthlyIncome) }}</span>
+                        <span class="text-slate-500 pr-2 text-xs flex items-center gap-1 group-hover:text-indigo-400 transition" title="Részletes bevételek">
+                            <i class="ph-bold ph-arrow-right"></i>
+                        </span>
                     </div>
                 </div>
 
@@ -311,6 +319,347 @@
                         </div>
                     </div>
                 </div>
+
+                <div v-if="currentView === 'income'" class="space-y-6 animate-fade-in">
+                    <!-- Fejléc -->
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-2">
+                        <div>
+                            <h2 class="text-2xl font-bold text-white flex items-center gap-2">
+                                <i class="ph-duotone ph-wallet text-indigo-400"></i> Bevételek és Havi Keret
+                            </h2>
+                            <p class="text-xs text-slate-400 mt-1">Részletes havi bevételek, fix fizetések ütemezése és előzmények ({{ formattedMonth }})</p>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span class="text-xs text-slate-400">Összesített havi keret:</span>
+                            <span class="text-2xl font-bold text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-xl border border-emerald-500/20">
+                                {{ formatCurrency(monthlyIncome) }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Összesítő KPI Kártyák -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <!-- Card 1: Rendszeres fix fizetések -->
+                        <div class="glass p-4 rounded-xl border-l-4 border-indigo-500 flex items-center justify-between">
+                            <div>
+                                <p class="text-[10px] uppercase text-slate-400 font-bold tracking-wider">Rendszeres fix bevételek</p>
+                                <p class="text-2xl font-bold text-white mt-1">{{ formatCurrency(totalRecurringIncomeAmount) }}</p>
+                                <p class="text-xs text-indigo-300 mt-0.5">{{ activeRecurringIncomes.length }} tétel beállítva</p>
+                            </div>
+                            <div class="p-3 bg-indigo-500/20 text-indigo-400 rounded-xl border border-indigo-500/30">
+                                <i class="ph-bold ph-arrows-clockwise text-2xl"></i>
+                            </div>
+                        </div>
+
+                        <!-- Card 2: Egyszeri bevételek -->
+                        <div class="glass p-4 rounded-xl border-l-4 border-emerald-500 flex items-center justify-between">
+                            <div>
+                                <p class="text-[10px] uppercase text-slate-400 font-bold tracking-wider">Egyszeri bevételek erre a hóra</p>
+                                <p class="text-2xl font-bold text-white mt-1">{{ formatCurrency(totalManualIncomeAmount) }}</p>
+                                <p class="text-xs text-emerald-400 mt-0.5">{{ currentMonthManualIncomes.length }} tétel rögzítve</p>
+                            </div>
+                            <div class="p-3 bg-emerald-500/20 text-emerald-400 rounded-xl border border-emerald-500/30">
+                                <i class="ph-bold ph-plus-circle text-2xl"></i>
+                            </div>
+                        </div>
+
+                        <!-- Card 3: Tervezési jegyzetekből (Kizárólag pozitív) -->
+                        <div class="glass p-4 rounded-xl border-l-4 border-amber-500 flex items-center justify-between">
+                            <div>
+                                <p class="text-[10px] uppercase text-slate-400 font-bold tracking-wider">Tervezési jegyzetekből (+)</p>
+                                <p class="text-2xl font-bold text-white mt-1">{{ formatCurrency(notesStats.income) }}</p>
+                                <p class="text-xs text-amber-400 mt-0.5">{{ currentMonthPositiveNoteCount }} tétel felismerve</p>
+                            </div>
+                            <div class="p-3 bg-amber-500/20 text-amber-400 rounded-xl border border-amber-500/30">
+                                <i class="ph-bold ph-notebook text-2xl"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Fő tartalom: 2 Oszlop -->
+                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+                        <!-- Bal oszlop (5 col): Rendszeres / Fix bevételek (Fizetések) -->
+                        <div class="lg:col-span-5 space-y-4">
+                            <div class="glass p-5 rounded-xl border border-indigo-500/20">
+                                <div class="flex items-center justify-between mb-3 pb-2 border-b border-slate-700/50">
+                                    <div class="flex items-center gap-2">
+                                        <i class="ph-bold ph-calendar-plus text-indigo-400 text-lg"></i>
+                                        <h3 class="font-bold text-white text-base">Rendszeres / Fix fizetések</h3>
+                                    </div>
+                                </div>
+                                <p class="text-xs text-slate-400 mb-4 leading-relaxed">
+                                    Add meg a fix fizetéseket és azok érkezési napját. Beállíthatod, hogy folyamatosan minden hónapban, vagy meghatározott ideig (pl. 8 alkalommal) érkezzen.
+                                </p>
+
+                                <!-- Új rendszeres bevétel űrlap -->
+                                <form @submit.prevent="addRecurringIncome" class="space-y-3 bg-slate-900/40 p-4 rounded-xl border border-slate-800">
+                                    <div>
+                                        <label class="text-[10px] uppercase text-slate-400 font-bold block mb-1">Megnevezés</label>
+                                        <input v-model="newRecurring.name" type="text" required placeholder="pl. Fizetés - Férj, Fix támogatás" class="glass-input w-full p-2.5 rounded-lg text-sm">
+                                    </div>
+                                    <div class="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label class="text-[10px] uppercase text-slate-400 font-bold block mb-1">Összeg (RON)</label>
+                                            <input v-model.number="newRecurring.amount" type="number" step="any" min="1" required placeholder="0" class="glass-input w-full p-2.5 rounded-lg text-sm font-bold text-emerald-400">
+                                        </div>
+                                        <div>
+                                            <label class="text-[10px] uppercase text-slate-400 font-bold block mb-1">Hónap hányadikán?</label>
+                                            <input v-model.number="newRecurring.day" type="number" min="1" max="31" required placeholder="pl. 1 vagy 5" class="glass-input w-full p-2.5 rounded-lg text-sm">
+                                        </div>
+                                    </div>
+
+                                    <!-- Időtartam választó (Folyamatos vs Határozott idejű) -->
+                                    <div>
+                                        <label class="text-[10px] uppercase text-slate-400 font-bold block mb-1">Időtartam</label>
+                                        <div class="grid grid-cols-2 gap-2">
+                                            <label class="flex items-center gap-2 p-2 rounded-lg bg-slate-800/60 border cursor-pointer text-xs transition" :class="newRecurring.durationType !== 'limited' ? 'border-indigo-500 text-white bg-slate-800' : 'border-slate-700/60 text-slate-400'">
+                                                <input type="radio" v-model="newRecurring.durationType" value="indefinite" class="accent-indigo-500">
+                                                <span>Minden hónapban (folyamatos)</span>
+                                            </label>
+                                            <label class="flex items-center gap-2 p-2 rounded-lg bg-slate-800/60 border cursor-pointer text-xs transition" :class="newRecurring.durationType === 'limited' ? 'border-indigo-500 text-white bg-slate-800' : 'border-slate-700/60 text-slate-400'">
+                                                <input type="radio" v-model="newRecurring.durationType" value="limited" class="accent-indigo-500">
+                                                <span>Meghatározott ideig</span>
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    <!-- Ha határozott idejű: Kezdő hónap és hónapok száma -->
+                                    <div v-if="newRecurring.durationType === 'limited'" class="space-y-2 bg-slate-800/40 p-3 rounded-lg border border-indigo-500/30">
+                                        <div class="grid grid-cols-2 gap-2">
+                                            <div>
+                                                <label class="text-[10px] uppercase text-slate-400 font-bold block mb-1">Kezdő hónap</label>
+                                                <input v-model="newRecurring.startMonthKey" type="month" required class="glass-input w-full p-2 rounded text-xs">
+                                            </div>
+                                            <div>
+                                                <label class="text-[10px] uppercase text-slate-400 font-bold block mb-1">Hány hónapig / alkalommal?</label>
+                                                <input v-model.number="newRecurring.totalMonths" type="number" min="1" max="120" required placeholder="pl. 8" class="glass-input w-full p-2 rounded text-xs font-bold text-indigo-300">
+                                            </div>
+                                        </div>
+                                        <p class="text-[10px] text-indigo-300 flex items-center gap-1">
+                                            <i class="ph-bold ph-info"></i> Érvényesség: <b>{{ formatMonthKey(newRecurring.startMonthKey) }}</b> – <b>{{ formatEndMonth(newRecurring.startMonthKey, newRecurring.totalMonths) }}</b> ({{ newRecurring.totalMonths || 0 }} alkalom)
+                                        </p>
+                                    </div>
+
+                                    <label class="flex items-center gap-2.5 text-xs text-slate-300 cursor-pointer pt-1">
+                                        <input type="checkbox" v-model="newRecurring.autoAdd" class="custom-checkbox shrink-0">
+                                        <span>Automatikusan hozzáadja a havi kerethez az érvényes hónapokban</span>
+                                    </label>
+                                    <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2.5 rounded-lg text-xs transition flex items-center justify-center gap-1.5 shadow-lg shadow-indigo-600/20 mt-2">
+                                        <i class="ph-bold ph-plus"></i> Fix bevétel hozzáadása
+                                    </button>
+                                </form>
+
+                                <!-- Rendszeres bevételek listája -->
+                                <div class="mt-4 space-y-2">
+                                    <h4 class="text-xs uppercase text-slate-400 font-bold tracking-wider mb-2">Beállított fix fizetések:</h4>
+                                    
+                                    <div v-if="recurringIncomes.length === 0" class="text-center py-6 bg-slate-900/20 rounded-lg border border-dashed border-slate-700/50">
+                                        <i class="ph-duotone ph-wallet text-2xl text-slate-600 mb-1"></i>
+                                        <p class="text-xs text-slate-500">Még nincs rögzített rendszeres fizetés.</p>
+                                    </div>
+
+                                    <div v-for="rec in recurringIncomes" :key="rec.id" class="p-3 bg-slate-800/40 rounded-xl border border-slate-700/60 hover:border-indigo-500/40 transition group relative">
+                                        <!-- Szerkesztő mód -->
+                                        <div v-if="editingRecurringId === rec.id" class="space-y-2.5">
+                                            <input v-model="editingRecurring.name" type="text" class="glass-input w-full p-2 rounded text-xs" placeholder="Megnevezés">
+                                            <div class="grid grid-cols-2 gap-2">
+                                                <input v-model.number="editingRecurring.amount" type="number" class="glass-input w-full p-2 rounded text-xs font-bold text-emerald-400" placeholder="Összeg">
+                                                <input v-model.number="editingRecurring.day" type="number" min="1" max="31" class="glass-input w-full p-2 rounded text-xs" placeholder="Hónap napja">
+                                            </div>
+
+                                            <!-- Szerkesztés: Időtartam -->
+                                            <div class="grid grid-cols-2 gap-2 text-xs">
+                                                <label class="flex items-center gap-1.5 cursor-pointer">
+                                                    <input type="radio" v-model="editingRecurring.durationType" value="indefinite" class="accent-indigo-500">
+                                                    <span>Folyamatos</span>
+                                                </label>
+                                                <label class="flex items-center gap-1.5 cursor-pointer">
+                                                    <input type="radio" v-model="editingRecurring.durationType" value="limited" class="accent-indigo-500">
+                                                    <span>Határozott idejű</span>
+                                                </label>
+                                            </div>
+
+                                            <div v-if="editingRecurring.durationType === 'limited'" class="grid grid-cols-2 gap-2 bg-slate-900/50 p-2 rounded border border-slate-700 text-xs">
+                                                <div>
+                                                    <label class="text-[9px] text-slate-400 block mb-0.5">Kezdő hónap</label>
+                                                    <input v-model="editingRecurring.startMonthKey" type="month" class="glass-input w-full p-1.5 rounded text-xs">
+                                                </div>
+                                                <div>
+                                                    <label class="text-[9px] text-slate-400 block mb-0.5">Alkalmak száma</label>
+                                                    <input v-model.number="editingRecurring.totalMonths" type="number" min="1" max="120" class="glass-input w-full p-1.5 rounded text-xs font-bold text-indigo-300">
+                                                </div>
+                                            </div>
+
+                                            <label class="flex items-center gap-2 text-xs text-slate-300">
+                                                <input type="checkbox" v-model="editingRecurring.autoAdd" class="custom-checkbox">
+                                                <span>Automatikus hozzáadás a kerethez</span>
+                                            </label>
+                                            <div class="flex justify-end gap-2 pt-1">
+                                                <button @click="cancelEditRecurring" class="px-2.5 py-1 text-xs text-slate-400 bg-slate-800 hover:text-white rounded">Mégse</button>
+                                                <button @click="saveEditRecurring(rec.id)" class="px-3 py-1 text-xs text-white bg-indigo-600 hover:bg-indigo-500 rounded font-bold">Mentés</button>
+                                            </div>
+                                        </div>
+
+                                        <!-- Megjelenítés -->
+                                        <div v-else class="flex items-start justify-between gap-2">
+                                            <div class="flex items-start gap-3">
+                                                <input type="checkbox" :checked="rec.autoAdd !== false" @change="toggleRecurringAutoAdd(rec)" class="custom-checkbox shrink-0 mt-1" title="Automatikus hozzáadás ki/be">
+                                                <div>
+                                                    <div class="flex items-center gap-1.5 flex-wrap">
+                                                        <span class="font-bold text-slate-200 text-sm">{{ rec.name }}</span>
+                                                        <span v-if="rec.autoAdd === false" class="text-[10px] text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20 font-normal">Kikapcsolva</span>
+                                                        
+                                                        <!-- Időtartam badge -->
+                                                        <span v-if="rec.durationType === 'limited'" class="text-[10px] font-semibold px-2 py-0.5 rounded-full border flex items-center gap-1" :class="getRecurringStatusBadge(rec).badgeClass">
+                                                            <i class="ph-bold ph-hourglass-high"></i>
+                                                            {{ getRecurringStatusBadge(rec).text }}
+                                                        </span>
+                                                        <span v-else class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-300 border border-blue-500/30">
+                                                            Minden hónapban
+                                                        </span>
+                                                    </div>
+
+                                                    <p class="text-xs text-slate-400 mt-1 flex items-center gap-1.5 flex-wrap">
+                                                        <span class="flex items-center gap-1"><i class="ph-bold ph-calendar text-indigo-400"></i> Hó <b>{{ rec.day }}.</b> napján</span>
+                                                        <span v-if="rec.durationType === 'limited'" class="text-slate-500 text-[11px]">
+                                                            • ({{ formatMonthKey(rec.startMonthKey) }} – {{ formatEndMonth(rec.startMonthKey, rec.totalMonths) }})
+                                                        </span>
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <div class="flex items-center gap-3 shrink-0">
+                                                <span class="font-bold text-emerald-400 text-sm whitespace-nowrap">{{ formatCurrency(rec.amount) }}</span>
+                                                <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition">
+                                                    <button @click="startEditRecurring(rec)" class="text-slate-500 hover:text-indigo-400 p-1 rounded" title="Szerkesztés">
+                                                        <i class="ph-bold ph-pencil-simple text-xs"></i>
+                                                    </button>
+                                                    <button @click="deleteRecurringIncome(rec.id)" class="text-slate-500 hover:text-red-400 p-1 rounded" title="Törlés">
+                                                        <i class="ph-bold ph-trash text-xs"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Jobb oszlop (7 col): Havi bevételek előzménye és tételei -->
+                        <div class="lg:col-span-7 space-y-4">
+                            <div class="glass p-5 rounded-xl border border-slate-700/50">
+                                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4 pb-3 border-b border-slate-700/50">
+                                    <div>
+                                        <h3 class="font-bold text-white text-base flex items-center gap-2">
+                                            <i class="ph-bold ph-receipt text-emerald-400 text-lg"></i>
+                                            <span>Havi bevételek előzménye</span>
+                                        </h3>
+                                        <p class="text-xs text-slate-400 mt-0.5">Dátum szerinti bontás a kiválasztott hónapra: <b>{{ formattedMonth }}</b></p>
+                                    </div>
+                                    <div class="text-right">
+                                        <span class="text-xs text-slate-500 block">Havi tételek összege:</span>
+                                        <span class="text-lg font-bold text-emerald-400">{{ formatCurrency(totalCurrentMonthIncomes) }}</span>
+                                    </div>
+                                </div>
+
+                                <!-- Új egyszeri bevétel hozzáadása -->
+                                <form @submit.prevent="addManualIncome" class="bg-slate-900/40 p-4 rounded-xl border border-slate-800 space-y-3 mb-6">
+                                    <p class="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                                        <i class="ph-bold ph-plus-circle text-emerald-400"></i> Új egyszeri bevétel rögzítése erre a hónapra
+                                    </p>
+                                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                        <div class="sm:col-span-1">
+                                            <label class="text-[10px] uppercase text-slate-500 font-bold block mb-1">Megnevezés</label>
+                                            <input v-model="newManualIncome.name" type="text" required placeholder="pl. Bónusz, Prémium" class="glass-input w-full p-2.5 rounded-lg text-sm">
+                                        </div>
+                                        <div>
+                                            <label class="text-[10px] uppercase text-slate-500 font-bold block mb-1">Összeg (RON)</label>
+                                            <input v-model.number="newManualIncome.amount" type="number" step="any" min="1" required placeholder="0" class="glass-input w-full p-2.5 rounded-lg text-sm font-bold text-emerald-400">
+                                        </div>
+                                        <div>
+                                            <label class="text-[10px] uppercase text-slate-500 font-bold block mb-1">Dátum</label>
+                                            <input v-model="newManualIncome.date" type="date" required class="glass-input w-full p-2.5 rounded-lg text-sm">
+                                        </div>
+                                    </div>
+                                    <div class="flex justify-end">
+                                        <button type="submit" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 px-5 rounded-lg text-xs transition flex items-center gap-1.5 shadow-lg shadow-emerald-600/20">
+                                            <i class="ph-bold ph-plus"></i> Egyszeri bevétel rögzítése
+                                        </button>
+                                    </div>
+                                </form>
+
+                                <!-- Dátum szerinti lista -->
+                                <div class="space-y-2.5">
+                                    <div class="flex items-center justify-between text-xs text-slate-400 pb-1">
+                                        <span>Beérkezett / Tervezett tételek időrendben:</span>
+                                        <span>{{ allDisplayIncomeEntries.length }} tétel összesen</span>
+                                    </div>
+
+                                    <div v-if="allDisplayIncomeEntries.length === 0" class="text-center py-12 bg-slate-900/20 rounded-xl border border-dashed border-slate-700/50">
+                                        <i class="ph-duotone ph-coins text-4xl text-slate-600 mb-2"></i>
+                                        <p class="text-slate-400 font-medium">Még nincs rögzített bevétel erre a hónapra.</p>
+                                        <p class="text-xs text-slate-500 mt-1">Adj hozzá egy rendszeres fizetést a bal oldalon, vagy rögzíts egy egyszeri tételt fent.</p>
+                                    </div>
+
+                                    <div v-for="item in allDisplayIncomeEntries" :key="item.id" class="p-3.5 bg-slate-800/40 rounded-xl border border-slate-700/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-slate-800/70 transition group">
+                                        <!-- Bal oldal: Dátum és adatok -->
+                                        <div class="flex items-center gap-3">
+                                            <!-- Dátum badge -->
+                                            <div class="w-14 text-center px-2 py-1.5 rounded-lg bg-slate-900/70 border border-slate-700 text-slate-300 font-mono text-xs shrink-0">
+                                                <span class="block text-[10px] uppercase text-slate-500">{{ item.displayMonth }}</span>
+                                                <span class="font-bold text-sm text-white">{{ item.displayDay }}</span>
+                                            </div>
+
+                                            <div>
+                                                <div class="flex items-center gap-2 flex-wrap">
+                                                    <span class="font-bold text-slate-100 text-sm">{{ item.name }}</span>
+                                                    
+                                                    <!-- Típus címke -->
+                                                    <span v-if="item.type === 'recurring'" class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 flex items-center gap-1">
+                                                        <i class="ph-bold ph-arrows-clockwise text-indigo-400"></i> Fix fizetés
+                                                    </span>
+                                                    <span v-else-if="item.type === 'manual'" class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
+                                                        <i class="ph-bold ph-tag text-emerald-400"></i> Egyszeri bevétel
+                                                    </span>
+                                                    <span v-else-if="item.type === 'note'" class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30 flex items-center gap-1">
+                                                        <i class="ph-bold ph-notebook text-amber-400"></i> Tervezési jegyzetből
+                                                    </span>
+                                                </div>
+                                                <p class="text-[10px] text-slate-400 mt-1">{{ item.subtext }}</p>
+                                            </div>
+                                        </div>
+
+                                        <!-- Jobb oldal: Összeg és műveletek -->
+                                        <div class="flex items-center justify-between sm:justify-end gap-3 pl-14 sm:pl-0">
+                                            <span class="text-base font-bold font-mono text-emerald-400 whitespace-nowrap">
+                                                +{{ formatCurrency(item.amount) }}
+                                            </span>
+                                            
+                                            <div class="flex items-center gap-1">
+                                                <template v-if="item.type === 'manual'">
+                                                    <button @click="deleteManualIncome(item.id)" class="text-slate-600 hover:text-red-400 p-1 rounded transition opacity-0 group-hover:opacity-100" title="Törlés">
+                                                        <i class="ph-bold ph-trash"></i>
+                                                    </button>
+                                                </template>
+                                                <template v-else-if="item.type === 'recurring'">
+                                                    <button @click="startEditRecurring(item.rawRecurring)" class="text-slate-600 hover:text-indigo-400 p-1 rounded transition opacity-0 group-hover:opacity-100" title="Rendszeres tétel szerkesztése">
+                                                        <i class="ph-bold ph-pencil-simple"></i>
+                                                    </button>
+                                                </template>
+                                                <template v-else-if="item.type === 'note'">
+                                                    <button @click="currentView = 'planning'" class="text-slate-600 hover:text-amber-400 p-1 rounded transition opacity-0 group-hover:opacity-100" title="Ugrás a tervezéshez">
+                                                        <i class="ph-bold ph-arrow-right"></i>
+                                                    </button>
+                                                </template>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div> <!-- End income view -->
 
                 <div v-if="currentView === 'planning'" class="space-y-6 animate-fade-in">
 
@@ -765,6 +1114,10 @@
                                     <span class="text-slate-200 text-sm flex items-center gap-2"><i class="ph-bold ph-chart-pie-slice text-indigo-400"></i>Áttekintés</span>
                                 </label>
                                 <label class="flex items-center gap-3 p-2.5 bg-slate-800/50 rounded-lg cursor-pointer border border-transparent hover:border-indigo-500/30 transition">
+                                    <input type="radio" v-model="userSettings.defaultView" value="income" @change="saveSettings" class="accent-indigo-500 w-4 h-4">
+                                    <span class="text-slate-200 text-sm flex items-center gap-2"><i class="ph-bold ph-wallet text-indigo-400"></i>Bevételek / Havi keret</span>
+                                </label>
+                                <label class="flex items-center gap-3 p-2.5 bg-slate-800/50 rounded-lg cursor-pointer border border-transparent hover:border-indigo-500/30 transition">
                                     <input type="radio" v-model="userSettings.defaultView" value="planning" @change="saveSettings" class="accent-indigo-500 w-4 h-4">
                                     <span class="text-slate-200 text-sm flex items-center gap-2"><i class="ph-bold ph-notebook text-indigo-400"></i>Tervezés</span>
                                 </label>
@@ -838,6 +1191,33 @@
             const allInstallments = ref([]);
             const notes = ref([]);
             const newNoteContent = ref('');
+
+            // --- V16: Részletes bevételek állapot ---
+            const recurringIncomes = ref([]);
+            const currentMonthManualIncomes = ref([]);
+            const newRecurring = ref({
+                name: '',
+                amount: '',
+                day: 1,
+                durationType: 'indefinite',
+                startMonthKey: '',
+                totalMonths: 8,
+                autoAdd: true
+            });
+            const editingRecurringId = ref(null);
+            const editingRecurring = ref({
+                name: '',
+                amount: '',
+                day: 1,
+                durationType: 'indefinite',
+                startMonthKey: '',
+                totalMonths: 8,
+                autoAdd: true
+            });
+
+            const newManualIncome = ref({ name: '', amount: '', date: '' });
+            const editingManualIncomeId = ref(null);
+            const editingManualIncome = ref({ name: '', amount: '', date: '' });
 
             const newProvider = ref({ name: '', color: '#6366f1' });
             const newInstallment = ref({ name: '', amount: '', months: '' });
@@ -950,6 +1330,10 @@
                 onSnapshot(query(collection(db, `users/${uid}/installments`)), (snap) => {
                     allInstallments.value = snap.docs.map(d => ({ id: d.id, ...d.data() }));
                 });
+                // V16: Rendszeres bevételek figyelése
+                onSnapshot(query(collection(db, `users/${uid}/recurring_incomes`)), (snap) => {
+                    recurringIncomes.value = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (parseInt(a.day) || 1) - (parseInt(b.day) || 1));
+                });
                 // Saját megosztások
                 onSnapshot(query(collection(db, `users/${uid}/shared`)), (snap) => {
                     const items = snap.docs.map(d => ({ id: d.id, ownerUid: uid, isOwner: true, ...d.data(), payments: [] }));
@@ -993,21 +1377,35 @@
                 bills.value = [];
                 allInstallments.value = [];
                 notes.value = [];
+                recurringIncomes.value = [];
+                currentMonthManualIncomes.value = [];
                 monthlyIncome.value = 0;
             };
 
             let billsUnsubscribe = null;
             let notesUnsubscribe = null;
+            let manualIncomesUnsubscribe = null;
 
             const loadMonthSpecificData = async (uid) => {
                 const key = currentMonthKey.value;
                 const incomeSnap = await getDoc(doc(db, `users/${uid}/budgets/${key}`));
-                monthlyIncome.value = incomeSnap.exists() ? incomeSnap.data().income : 0;
+                const savedIncome = incomeSnap.exists() ? (parseFloat(incomeSnap.data().income) || 0) : 0;
 
                 if(billsUnsubscribe) billsUnsubscribe();
                 billsUnsubscribe = onSnapshot(query(collection(db, `users/${uid}/bills`), where("monthKey", "==", key)), (snap) => {
                     bills.value = snap.docs.map(d => ({ id: d.id, ...d.data() }));
                 });
+
+                // V16: Havi egyszeri bevételek figyelése az adott hónapra
+                if(manualIncomesUnsubscribe) manualIncomesUnsubscribe();
+                manualIncomesUnsubscribe = onSnapshot(query(collection(db, `users/${uid}/income_entries`), where("monthKey", "==", key)), (snap) => {
+                    currentMonthManualIncomes.value = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                });
+
+                // Ha még nincs részletes tétel, de van mentett alap keret, használja azt
+                if (totalDetailedIncome.value === 0) {
+                    monthlyIncome.value = savedIncome;
+                }
             };
 
             const loadNotes = (uid) => {
@@ -1505,6 +1903,312 @@
                 }
             };
 
+
+            // --- V17: DÁTUM ÉS ÉRVÉNYESSÉG SEGÉDFÜGGVÉNYEK ---
+            const formatMonthKey = (key) => {
+                if (!key) return '';
+                const parts = key.split('-');
+                if (parts.length < 2) return key;
+                const [y, m] = parts;
+                const monthNames = ['jan.', 'febr.', 'márc.', 'ápr.', 'máj.', 'jún.', 'júl.', 'aug.', 'szept.', 'okt.', 'nov.', 'dec.'];
+                const idx = parseInt(m) - 1;
+                return `${y}. ${monthNames[idx] || m}`;
+            };
+
+            const getEndMonthKey = (startKey, totalMonths) => {
+                if (!startKey || !totalMonths) return startKey || '';
+                const [y, m] = startKey.split('-').map(Number);
+                const totalM = (y * 12 + (m - 1)) + (parseInt(totalMonths) - 1);
+                const endY = Math.floor(totalM / 12);
+                const endM = (totalM % 12) + 1;
+                return `${endY}-${String(endM).padStart(2, '0')}`;
+            };
+
+            const formatEndMonth = (startKey, totalMonths) => {
+                return formatMonthKey(getEndMonthKey(startKey, totalMonths));
+            };
+
+            // Ellenőrzi, hogy egy rendszeres fizetés érvényes-e az adott hónapban
+            const isRecurringActiveInMonth = (rec, monthKey) => {
+                if (rec.autoAdd === false) return false;
+                if (rec.durationType === 'limited') {
+                    if (!rec.startMonthKey || !rec.totalMonths) return true;
+                    const diff = getMonthDiff(rec.startMonthKey, monthKey);
+                    return diff >= 0 && diff < parseInt(rec.totalMonths);
+                }
+                return true;
+            };
+
+            // Vizuális állapotjelző a rendszeres fizetések listájához
+            const getRecurringStatusBadge = (rec) => {
+                if (rec.durationType !== 'limited') {
+                    return { text: 'Folyamatos', badgeClass: 'bg-blue-500/15 text-blue-300 border-blue-500/30' };
+                }
+                const diff = getMonthDiff(rec.startMonthKey, currentMonthKey.value);
+                const total = parseInt(rec.totalMonths) || 1;
+                if (diff < 0) {
+                    return { text: `Kezdés: ${formatMonthKey(rec.startMonthKey)}`, badgeClass: 'bg-slate-700 text-slate-300 border-slate-600' };
+                } else if (diff >= 0 && diff < total) {
+                    const remaining = total - diff;
+                    return { text: `Aktív (${diff + 1} / ${total}. alkalom, még ${remaining})`, badgeClass: 'bg-purple-500/20 text-purple-300 border-purple-500/30' };
+                } else {
+                    return { text: `Lejárt (${total}/${total})`, badgeClass: 'bg-slate-800 text-slate-500 border-slate-700' };
+                }
+            };
+
+            // --- BEVÉTEL SZÁMÍTÁSOK ÉS INTEGRÁCIÓ ---
+            const activeRecurringIncomes = computed(() => {
+                return recurringIncomes.value.filter(r => isRecurringActiveInMonth(r, currentMonthKey.value));
+            });
+
+            const totalRecurringIncomeAmount = computed(() => {
+                return activeRecurringIncomes.value.reduce((sum, r) => sum + (parseFloat(r.amount) || 0), 0);
+            });
+
+            const totalManualIncomeAmount = computed(() => {
+                return currentMonthManualIncomes.value.reduce((sum, m) => sum + (parseFloat(m.amount) || 0), 0);
+            });
+
+            // Részletes rögzített bevételek összege (fix + egyszeri)
+            const totalDetailedIncome = computed(() => {
+                return totalRecurringIncomeAmount.value + totalManualIncomeAmount.value;
+            });
+
+            // Tervezési jegyzetekből származó KIZÁRÓLAG POZITÍV összegek listája
+            const currentMonthNoteIncomes = computed(() => {
+                const items = [];
+                const includeCompleted = userSettings.value.includeCompletedTodos !== false;
+                for (const note of notes.value) {
+                    if (note.type === 'todo' && note.isDone && !includeCompleted) continue;
+                    const amounts = extractAmountsFromText(note.content);
+                    for (let idx = 0; idx < amounts.length; idx++) {
+                        const amt = amounts[idx];
+                        if (amt > 0) { // STRICTLY positive only! Negatívak kizárva!
+                            const noteDate = note.createdAt ? new Date(note.createdAt.toDate()) : new Date();
+                            const monthNames = ['jan.', 'febr.', 'márc.', 'ápr.', 'máj.', 'jún.', 'júl.', 'aug.', 'szept.', 'okt.', 'nov.', 'dec.'];
+                            items.push({
+                                id: `note_${note.id}_${idx}`,
+                                name: note.content,
+                                amount: amt,
+                                type: 'note',
+                                displayMonth: monthNames[noteDate.getMonth()],
+                                displayDay: String(noteDate.getDate()).padStart(2, '0'),
+                                subtext: 'Tervezési jegyzetből felismert tétel (' + (note.displayDate || 'Most') + ')',
+                                sortDate: noteDate.toISOString(),
+                                rawNote: note
+                            });
+                        }
+                    }
+                }
+                return items;
+            });
+
+            const currentMonthPositiveNoteCount = computed(() => currentMonthNoteIncomes.value.length);
+
+            // Adott hónap teljes bevétele (Fix + Egyszeri + Jegyzetek pozitív összegei)
+            const totalCurrentMonthIncomes = computed(() => {
+                return totalDetailedIncome.value + notesStats.value.income;
+            });
+
+            // Dátum szerint összefésült és rendezett lista a havi előzmény felületre
+            const allDisplayIncomeEntries = computed(() => {
+                const entries = [];
+                const curYear = currentDate.value.getFullYear();
+                const curMonth = currentDate.value.getMonth();
+                const monthNames = ['jan.', 'febr.', 'márc.', 'ápr.', 'máj.', 'jún.', 'júl.', 'aug.', 'szept.', 'okt.', 'nov.', 'dec.'];
+                const monthNameStr = monthNames[curMonth];
+
+                // 1. Rendszeres fix bevételek erre a hónapra leképezve (csak az érvényesek!)
+                for (const rec of recurringIncomes.value) {
+                    if (!isRecurringActiveInMonth(rec, currentMonthKey.value)) continue;
+                    const dayNum = parseInt(rec.day) || 1;
+                    const dayStr = String(dayNum).padStart(2, '0');
+                    const monthStr = String(curMonth + 1).padStart(2, '0');
+                    const sortDate = `${curYear}-${monthStr}-${dayStr}`;
+                    
+                    let subtext = `Minden hónap ${dayNum}. napján esedékes fix fizetés`;
+                    if (rec.durationType === 'limited') {
+                        const diff = getMonthDiff(rec.startMonthKey, currentMonthKey.value);
+                        const total = parseInt(rec.totalMonths) || 1;
+                        const remainingAfterThis = Math.max(total - diff - 1, 0);
+                        subtext = `Fix fizetés (${diff + 1} / ${total}. alkalom, még ${remainingAfterThis} alkalom maradt ezután)`;
+                    }
+
+                    entries.push({
+                        id: `rec_${rec.id}`,
+                        name: rec.name,
+                        amount: parseFloat(rec.amount) || 0,
+                        type: 'recurring',
+                        displayMonth: monthNameStr,
+                        displayDay: dayStr,
+                        subtext: subtext,
+                        sortDate: sortDate,
+                        rawRecurring: rec
+                    });
+                }
+
+                // 2. Egyszeri bevételek az adott hónapra
+                for (const man of currentMonthManualIncomes.value) {
+                    let dMonth = monthNameStr;
+                    let dDay = '01';
+                    if (man.date) {
+                        const parts = man.date.split('-');
+                        if (parts.length === 3) {
+                            const pMonth = parseInt(parts[1]) - 1;
+                            if (pMonth >= 0 && pMonth < 12) dMonth = monthNames[pMonth];
+                            dDay = parts[2];
+                        }
+                    }
+                    entries.push({
+                        id: `man_${man.id}`,
+                        name: man.name,
+                        amount: parseFloat(man.amount) || 0,
+                        type: 'manual',
+                        displayMonth: dMonth,
+                        displayDay: dDay,
+                        subtext: `Egyszeri bevétel rögzítve (${man.date || 'ezen a hónapon'})`,
+                        sortDate: man.date || `${curYear}-${String(curMonth + 1).padStart(2, '0')}-01`,
+                        rawManual: man
+                    });
+                }
+
+                // 3. Jegyzetekből származó pozitív összegek
+                for (const nItem of currentMonthNoteIncomes.value) {
+                    entries.push(nItem);
+                }
+
+                // Dátum szerinti növekvő sorrend
+                return entries.sort((a, b) => a.sortDate.localeCompare(b.sortDate));
+            });
+
+            // Automatikus szinkronizáció: Ha vannak részletes tételek, a monthlyIncome automatikusan frissül
+            watch([totalDetailedIncome, recurringIncomes, currentMonthManualIncomes], () => {
+                if (totalDetailedIncome.value > 0) {
+                    monthlyIncome.value = totalDetailedIncome.value;
+                    if (user.value) {
+                        saveIncome();
+                    }
+                }
+            });
+
+            // Beviteli mező dátumának inicializálása az aktuális hónapra
+            watch(currentDate, () => {
+                const y = currentDate.value.getFullYear();
+                const m = String(currentDate.value.getMonth() + 1).padStart(2, '0');
+                const now = new Date();
+                let day = now.getDate();
+                const lastDay = new Date(y, currentDate.value.getMonth() + 1, 0).getDate();
+                if (day > lastDay) day = lastDay;
+                newManualIncome.value.date = `${y}-${m}-${String(day).padStart(2, '0')}`;
+                if (!newRecurring.value.startMonthKey) {
+                    newRecurring.value.startMonthKey = `${y}-${m}`;
+                }
+            }, { immediate: true });
+
+            // --- V16: MŰVELETI METÓDUSOK ---
+            const addRecurringIncome = async () => {
+                try {
+                    const { name, amount, day, durationType, startMonthKey, totalMonths, autoAdd } = newRecurring.value;
+                    if (!name || !amount) return;
+                    await addDoc(collection(db, `users/${user.value.uid}/recurring_incomes`), {
+                        name: name.trim(),
+                        amount: parseFloat(amount),
+                        day: parseInt(day) || 1,
+                        durationType: durationType || 'indefinite',
+                        startMonthKey: startMonthKey || currentMonthKey.value,
+                        totalMonths: parseInt(totalMonths) || 1,
+                        autoAdd: autoAdd !== false,
+                        createdAt: serverTimestamp()
+                    });
+                    newRecurring.value = {
+                        name: '',
+                        amount: '',
+                        day: 1,
+                        durationType: 'indefinite',
+                        startMonthKey: currentMonthKey.value,
+                        totalMonths: 8,
+                        autoAdd: true
+                    };
+                } catch(e) {
+                    alert('Hiba mentéskor: ' + e.message);
+                }
+            };
+
+            const toggleRecurringAutoAdd = async (rec) => {
+                try {
+                    await updateDoc(doc(db, `users/${user.value.uid}/recurring_incomes`, rec.id), {
+                        autoAdd: !rec.autoAdd
+                    });
+                } catch(e) {
+                    alert('Hiba: ' + e.message);
+                }
+            };
+
+            const deleteRecurringIncome = async (id) => {
+                if (confirm('Biztosan törlöd ezt a rendszeres fizetést?')) {
+                    await deleteDoc(doc(db, `users/${user.value.uid}/recurring_incomes`, id));
+                }
+            };
+
+            const startEditRecurring = (rec) => {
+                editingRecurringId.value = rec.id;
+                editingRecurring.value = {
+                    name: rec.name,
+                    amount: rec.amount,
+                    day: rec.day,
+                    durationType: rec.durationType || 'indefinite',
+                    startMonthKey: rec.startMonthKey || currentMonthKey.value,
+                    totalMonths: rec.totalMonths || 8,
+                    autoAdd: rec.autoAdd !== false
+                };
+            };
+
+            const cancelEditRecurring = () => {
+                editingRecurringId.value = null;
+            };
+
+            const saveEditRecurring = async (id) => {
+                try {
+                    const { name, amount, day, durationType, startMonthKey, totalMonths, autoAdd } = editingRecurring.value;
+                    await updateDoc(doc(db, `users/${user.value.uid}/recurring_incomes`, id), {
+                        name: name.trim(),
+                        amount: parseFloat(amount),
+                        day: parseInt(day) || 1,
+                        durationType: durationType || 'indefinite',
+                        startMonthKey: startMonthKey || currentMonthKey.value,
+                        totalMonths: parseInt(totalMonths) || 1,
+                        autoAdd: autoAdd !== false
+                    });
+                    editingRecurringId.value = null;
+                } catch(e) {
+                    alert('Hiba: ' + e.message);
+                }
+            };
+
+            const addManualIncome = async () => {
+                try {
+                    const { name, amount, date } = newManualIncome.value;
+                    if (!name || !amount || !date) return;
+                    await addDoc(collection(db, `users/${user.value.uid}/income_entries`), {
+                        name: name.trim(),
+                        amount: parseFloat(amount),
+                        date: date,
+                        monthKey: currentMonthKey.value,
+                        createdAt: serverTimestamp()
+                    });
+                    newManualIncome.value.name = '';
+                    newManualIncome.value.amount = '';
+                } catch(e) {
+                    alert('Hiba: ' + e.message);
+                }
+            };
+
+            const deleteManualIncome = async (id) => {
+                if (confirm('Törlöd ezt a bevételt?')) {
+                    await deleteDoc(doc(db, `users/${user.value.uid}/income_entries`, id));
+                }
+            };
+
             // Jegyzet szerkesztési funkciók
             const editingNoteId = ref(null);
             const editingNoteContent = ref('');
@@ -1726,7 +2430,16 @@
                 sortedNotes, newNoteContent, processNoteInput, toggleTodo, deleteNote,
                 editingNoteId, editingNoteContent, startEditNote, cancelEditNote, saveEditNote,
                 getNoteAmounts, notesStats, baseRemainingMoney,
-                paydayDisplay, dailyBudget // Exportálva
+                paydayDisplay, dailyBudget,
+                
+                // V16: Bevételek és Havi keret exportok
+                recurringIncomes, currentMonthManualIncomes, newRecurring, editingRecurringId, editingRecurring,
+                newManualIncome, editingManualIncomeId, editingManualIncome,
+                activeRecurringIncomes, totalRecurringIncomeAmount, totalManualIncomeAmount, totalDetailedIncome,
+                currentMonthNoteIncomes, currentMonthPositiveNoteCount, totalCurrentMonthIncomes, allDisplayIncomeEntries,
+                addRecurringIncome, toggleRecurringAutoAdd, deleteRecurringIncome, startEditRecurring, cancelEditRecurring, saveEditRecurring,
+                addManualIncome, deleteManualIncome,
+                formatMonthKey, getEndMonthKey, formatEndMonth, isRecurringActiveInMonth, getRecurringStatusBadge
             };
         }
     }).mount('#app');
