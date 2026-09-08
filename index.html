@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Money manager v18 | Napi Kerettel</title>
+    <title>Money manager v19 | Napi Kerettel</title>
 
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -72,7 +72,7 @@
             <div class="p-6 border-b border-slate-700/50">
                 <div class="flex items-center justify-between">
                     <h2 class="text-xl font-bold text-white">Money<span class="text-indigo-500"> manager</span></h2>
-                    <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-bold">v18</span>
+                    <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-bold">v19</span>
                 </div>
                 <p class="text-xs text-slate-500 mt-1">{{ user.email }}</p>
             </div>
@@ -108,7 +108,7 @@
         <div class="md:hidden fixed top-0 w-full glass z-50 p-4 flex justify-between items-center">
             <div class="flex items-center gap-2">
                 <span class="font-bold text-lg">Money manager</span>
-                <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-bold">v18</span>
+                <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-bold">v19</span>
             </div>
             <div class="flex gap-3 items-center">
                 <button @click="currentView = 'dashboard'" :class="currentView === 'dashboard' ? 'text-indigo-400' : 'text-slate-400'" title="Áttekintés"><i class="ph-bold ph-chart-pie-slice text-2xl"></i></button>
@@ -643,7 +643,7 @@
                                             
                                             <div class="flex items-center gap-1">
                                                 <template v-if="item.type === 'manual'">
-                                                    <button @click="deleteManualIncome(item.id)" class="text-slate-600 hover:text-red-400 p-1 rounded transition opacity-0 group-hover:opacity-100" title="Törlés">
+                                                    <button @click="deleteManualIncome(item.rawId || item.id)" class="text-slate-600 hover:text-red-400 p-1 rounded transition opacity-0 group-hover:opacity-100" title="Törlés">
                                                         <i class="ph-bold ph-trash"></i>
                                                     </button>
                                                 </template>
@@ -1937,8 +1937,10 @@
                     currentMonthManualIncomes.value = snap.docs.map(d => ({ id: d.id, ...d.data() }));
                 });
 
-                // Ha még nincs részletes tétel, de van mentett alap keret, használja azt
-                if (totalDetailedIncome.value === 0) {
+                // V19: Ha vannak részletes tételek vagy jegyzet bevételek, azok összege a mérvadó
+                if (totalCurrentMonthIncomes.value > 0 || currentMonthManualIncomes.value.length > 0 || activeRecurringIncomes.value.length > 0 || notesStats.value.income > 0) {
+                    monthlyIncome.value = totalCurrentMonthIncomes.value;
+                } else {
                     monthlyIncome.value = savedIncome;
                 }
             };
@@ -2359,7 +2361,7 @@
             const totalInstallments = computed(() => activeInstallments.value.reduce((sum, i) => sum + i.monthlyAmount, 0));
             const totalBills = computed(() => bills.value.reduce((sum, b) => sum + b.amount, 0));
             const totalObligations = computed(() => totalBills.value + totalInstallments.value);
-            const baseRemainingMoney = computed(() => monthlyIncome.value - totalObligations.value);
+            const baseRemainingMoney = computed(() => (monthlyIncome.value - notesStats.value.income) - totalObligations.value);
             const remainingMoney = computed(() => baseRemainingMoney.value + notesStats.value.net);
             const billsPercentage = computed(() => monthlyIncome.value === 0 ? 0 : Math.round((totalObligations.value / monthlyIncome.value) * 100));
 
@@ -2542,7 +2544,7 @@
 
             // Adott hónap teljes bevétele (Fix + Egyszeri + Jegyzetek pozitív összegei)
             const totalCurrentMonthIncomes = computed(() => {
-                return totalDetailedIncome.value + notesStats.value.income;
+                return totalDetailedIncome.value + (parseFloat(notesStats.value.income) || 0);
             });
 
             // Dátum szerint összefésült és rendezett lista a havi előzmény felületre
@@ -2596,6 +2598,7 @@
                     }
                     entries.push({
                         id: `man_${man.id}`,
+                        rawId: man.id,
                         name: man.name,
                         amount: parseFloat(man.amount) || 0,
                         type: 'manual',
@@ -2616,15 +2619,25 @@
                 return entries.sort((a, b) => a.sortDate.localeCompare(b.sortDate));
             });
 
-            // Automatikus szinkronizáció: Ha vannak részletes tételek, a monthlyIncome automatikusan frissül
-            watch([totalDetailedIncome, recurringIncomes, currentMonthManualIncomes], () => {
-                if (totalDetailedIncome.value > 0) {
-                    monthlyIncome.value = totalDetailedIncome.value;
+            // V19 Automatikus szinkronizáció: A havi keret (monthlyIncome) automatikusan tartalmazza a fix fizetéseket,
+            // az egyszeri bevételeket ÉS a tervezési jegyzetekből érkező pozitív összegeket is!
+            watch([totalCurrentMonthIncomes, recurringIncomes, currentMonthManualIncomes, () => notesStats.value.income], () => {
+                const hasAnyIncomeSource = activeRecurringIncomes.value.length > 0 || currentMonthManualIncomes.value.length > 0 || (notesStats.value.income > 0);
+                if (hasAnyIncomeSource) {
+                    monthlyIncome.value = totalCurrentMonthIncomes.value;
                     if (user.value) {
                         saveIncome();
                     }
+                } else {
+                    // Ha minden bevételi tétel törölve lett, a keret azonnal 0-ra frissül
+                    if (monthlyIncome.value !== 0) {
+                        monthlyIncome.value = 0;
+                        if (user.value) {
+                            saveIncome();
+                        }
+                    }
                 }
-            });
+            }, { immediate: true });
 
             // Beviteli mező dátumának inicializálása az aktuális hónapra
             watch(currentDate, () => {
@@ -2739,8 +2752,15 @@
             };
 
             const deleteManualIncome = async (id) => {
+                if (!id) return;
+                const cleanId = String(id).startsWith('man_') ? String(id).substring(4) : String(id);
                 if (confirm('Törlöd ezt a bevételt?')) {
-                    await deleteDoc(doc(db, `users/${user.value.uid}/income_entries`, id));
+                    try {
+                        await deleteDoc(doc(db, `users/${user.value.uid}/income_entries`, cleanId));
+                    } catch(e) {
+                        console.error("Hiba a bevétel törlésekor:", e);
+                        alert("Hiba történt a törlés során: " + e.message);
+                    }
                 }
             };
 
