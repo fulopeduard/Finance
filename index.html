@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Money manager v19 | Napi Kerettel</title>
+    <title>Money manager v21 | Napi Kerettel</title>
 
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -72,7 +72,7 @@
             <div class="p-6 border-b border-slate-700/50">
                 <div class="flex items-center justify-between">
                     <h2 class="text-xl font-bold text-white">Money<span class="text-indigo-500"> manager</span></h2>
-                    <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-bold">v19</span>
+                    <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-bold">v21</span>
                 </div>
                 <p class="text-xs text-slate-500 mt-1">{{ user.email }}</p>
             </div>
@@ -108,7 +108,7 @@
         <div class="md:hidden fixed top-0 w-full glass z-50 p-4 flex justify-between items-center">
             <div class="flex items-center gap-2">
                 <span class="font-bold text-lg">Money manager</span>
-                <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-bold">v19</span>
+                <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-bold">v21</span>
             </div>
             <div class="flex gap-3 items-center">
                 <button @click="currentView = 'dashboard'" :class="currentView === 'dashboard' ? 'text-indigo-400' : 'text-slate-400'" title="Áttekintés"><i class="ph-bold ph-chart-pie-slice text-2xl"></i></button>
@@ -131,14 +131,34 @@
                         <span class="font-bold text-lg uppercase tracking-wide w-32 text-center">{{ formattedMonth }}</span>
                         <button @click="changeMonth(1)" class="text-slate-400 hover:text-white"><i class="ph-bold ph-caret-right text-xl"></i></button>
                     </div>
-                    <div class="flex items-center gap-2 glass p-2 rounded-lg cursor-pointer hover:border-indigo-500/40 transition group" @click="currentView = 'income'" title="Kattints a részletes bevételek és fix fizetések megnyitásához">
-                        <span class="text-slate-400 text-sm ml-2 group-hover:text-indigo-300 transition flex items-center gap-1.5">
-                            <i class="ph-bold ph-wallet text-indigo-400"></i> Havi keret:
-                        </span>
-                        <span class="font-bold text-emerald-400 px-2 py-0.5 text-base">{{ formatCurrency(monthlyIncome) }}</span>
-                        <span class="text-slate-500 pr-2 text-xs flex items-center gap-1 group-hover:text-indigo-400 transition" title="Részletes bevételek">
-                            <i class="ph-bold ph-arrow-right"></i>
-                        </span>
+                    <!-- V21: Havi keret és alatta a Szabadon elkölthető összeg (Minden menüben látható) -->
+                    <div class="glass px-3.5 py-2 rounded-xl border border-slate-700/60 flex flex-col gap-1.5 shadow-md hover:border-slate-600 transition min-w-[240px]">
+                        <!-- Havi keret -->
+                        <div class="flex items-center justify-between gap-3 cursor-pointer group" @click="currentView = 'income'" title="Kattints a részletes bevételek és fix fizetések megnyitásához">
+                            <span class="text-slate-400 text-xs group-hover:text-indigo-300 transition flex items-center gap-1.5 font-medium">
+                                <i class="ph-bold ph-wallet text-indigo-400"></i> Havi keret:
+                            </span>
+                            <div class="flex items-center gap-1">
+                                <span class="font-bold text-emerald-400 text-sm font-mono">{{ formatCurrency(monthlyIncome) }}</span>
+                                <i class="ph-bold ph-arrow-right text-[10px] text-slate-500 group-hover:text-indigo-400 transition"></i>
+                            </div>
+                        </div>
+
+                        <!-- Finom elválasztó vonal -->
+                        <div class="border-t border-slate-700/50"></div>
+
+                        <!-- Szabadon elkölthető összeg (közvetlenül a havi keret alatt) -->
+                        <div class="flex items-center justify-between gap-3 cursor-pointer group" @click="currentView = 'dashboard'" title="Kattints az áttekintéshez (Szabadon elkölthető keret)">
+                            <span class="text-slate-400 text-xs group-hover:text-emerald-300 transition flex items-center gap-1.5 font-medium">
+                                <i class="ph-bold ph-sparkle text-emerald-400"></i> Szabadon elkölthető:
+                            </span>
+                            <div class="flex items-center gap-1">
+                                <span class="font-extrabold text-sm font-mono" :class="remainingMoney >= 0 ? 'text-emerald-400' : 'text-rose-400'">
+                                    {{ formatCurrency(remainingMoney) }}
+                                </span>
+                                <i class="ph-bold ph-arrow-right text-[10px] text-slate-500 group-hover:text-emerald-400 transition"></i>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -236,14 +256,22 @@
                                     <span class="font-bold text-slate-200">{{ item.provider.name }}</span>
                                     <span class="text-xs font-mono px-2 py-1 rounded bg-slate-900 text-slate-300 shadow-sm border border-slate-700">{{ formatCurrency(item.totalAmount) }}</span>
                                 </div>
-                                <div class="flex gap-2 pl-2 mb-2">
-                                    <input v-model.number="item.tempAmount" type="number" placeholder="Összeg" class="glass-input w-full p-2 rounded text-sm" @keyup.enter="addBill(item.provider.id, item.tempAmount); item.tempAmount = ''">
-                                    <button @click="addBill(item.provider.id, item.tempAmount); item.tempAmount = ''" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3 rounded flex items-center justify-center transition shadow-lg shadow-indigo-500/20"><i class="ph-bold ph-plus"></i></button>
+                                <div class="space-y-1.5 pl-2 mb-2">
+                                    <div class="flex gap-2">
+                                        <input v-model.number="item.tempAmount" type="number" step="any" min="0.01" placeholder="Összeg" class="glass-input w-full p-2 rounded text-sm" @keyup.enter="addBill(item.provider.id, item.tempAmount, item.tempComment); item.tempAmount = ''; item.tempComment = ''">
+                                        <button @click="addBill(item.provider.id, item.tempAmount, item.tempComment); item.tempAmount = ''; item.tempComment = ''" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3 rounded flex items-center justify-center transition shadow-lg shadow-indigo-500/20" title="Számla hozzáadása"><i class="ph-bold ph-plus"></i></button>
+                                    </div>
+                                    <input v-model="item.tempComment" type="text" placeholder="Megjegyzés (opcionális)" class="glass-input w-full px-2.5 py-1 rounded text-xs text-slate-300 placeholder-slate-500" @keyup.enter="addBill(item.provider.id, item.tempAmount, item.tempComment); item.tempAmount = ''; item.tempComment = ''">
                                 </div>
                                 <div v-if="item.bills.length > 0" class="mt-auto pl-2 pt-3 border-t border-slate-700/50">
-                                    <div v-for="bill in item.bills" :key="bill.id" class="flex justify-between text-xs py-1 group/bill">
-                                        <span class="text-slate-300">{{ formatCurrency(bill.amount) }}</span>
-                                        <button @click="deleteBill(bill.id)" class="text-red-400 opacity-0 group-hover/bill:opacity-100"><i class="ph-bold ph-trash"></i></button>
+                                    <div v-for="bill in item.bills" :key="bill.id" class="flex justify-between items-center text-xs py-1 group/bill">
+                                        <div class="flex items-center gap-1.5 truncate mr-2">
+                                            <span class="text-slate-300 font-medium">{{ formatCurrency(bill.amount) }}</span>
+                                            <span v-if="bill.comment" class="text-[11px] text-slate-400 truncate bg-slate-900/70 px-1.5 py-0.5 rounded border border-slate-700/50" :title="bill.comment">
+                                                {{ bill.comment }}
+                                            </span>
+                                        </div>
+                                        <button @click="deleteBill(bill.id)" class="text-red-400 opacity-0 group-hover/bill:opacity-100 shrink-0 transition" title="Törlés"><i class="ph-bold ph-trash"></i></button>
                                     </div>
                                 </div>
                             </div>
@@ -767,12 +795,14 @@
                                     <span :class="{ 'line-through-gray': note.isDone }" class="text-slate-200 font-medium transition-all block break-words">{{ note.content }}</span>
                                     
                                     <!-- Felismert összegek címkéi -->
-                                    <div v-if="getNoteAmounts(note.content).length > 0" class="flex flex-wrap gap-1.5 mt-2">
+                                    <div v-if="getNoteAmounts(note.content).length > 0" class="flex flex-wrap items-center gap-1.5 mt-2">
                                         <span v-for="(amt, idx) in getNoteAmounts(note.content)" :key="idx"
-                                              :class="amt > 0 ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' : 'bg-rose-500/15 text-rose-300 border-rose-500/30'"
-                                              class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold border font-mono">
-                                            <i :class="amt > 0 ? 'ph-bold ph-plus-circle text-emerald-400' : 'ph-bold ph-minus-circle text-rose-400'"></i>
-                                            {{ amt > 0 ? '+' : '' }}{{ formatCurrency(amt) }}
+                                              :class="note.isDone ? (amt > 0 ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' : 'bg-rose-500/15 text-rose-300 border-rose-500/30') : 'bg-slate-800/80 text-slate-400 border-slate-700 opacity-80'"
+                                              class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold border font-mono transition">
+                                            <i :class="note.isDone ? (amt > 0 ? 'ph-bold ph-plus-circle text-emerald-400' : 'ph-bold ph-minus-circle text-rose-400') : 'ph-bold ph-clock text-slate-400'"></i>
+                                            <span>{{ amt > 0 ? '+' : '' }}{{ formatCurrency(amt) }}</span>
+                                            <span v-if="!note.isDone" class="text-[10px] text-slate-400 font-normal italic ml-0.5">(pipáld ki a {{ amt > 0 ? 'hozzáadáshoz' : 'levonáshoz' }})</span>
+                                            <span v-else class="text-[10px] text-emerald-400 font-normal ml-0.5 flex items-center gap-0.5"><i class="ph-bold ph-check text-[10px]"></i> érvényesítve</span>
                                         </span>
                                     </div>
 
@@ -2083,9 +2113,9 @@
             const notesStats = computed(() => {
                 let income = 0;
                 let expense = 0;
-                const includeCompleted = userSettings.value.includeCompletedTodos !== false;
                 for (const note of notes.value) {
-                    if (note.type === 'todo' && note.isDone && !includeCompleted) {
+                    // V20: Ha teendő (#-tel megadott todo), CSAK AKKOR számoljon vele, ha ki lett pipálva!
+                    if (note.type === 'todo' && !note.isDone) {
                         continue;
                     }
                     const amounts = extractAmountsFromText(note.content);
@@ -2372,7 +2402,8 @@
                         provider: prov,
                         bills: providerBills,
                         totalAmount: providerBills.reduce((s, b) => s + b.amount, 0),
-                        tempAmount: ''
+                        tempAmount: '',
+                        tempComment: ''
                     };
                 });
             });
@@ -2384,10 +2415,14 @@
             };
             const deleteProvider = async (id) => { if(confirm('Törlöd ezt a szolgáltatót?')) await deleteDoc(doc(db, `users/${user.value.uid}/providers`, id)); };
 
-            const addBill = async (pId, amt) => {
+            const addBill = async (pId, amt, comment = '') => {
                 if(!amt) return;
                 await addDoc(collection(db, `users/${user.value.uid}/bills`), {
-                    providerId: pId, amount: parseFloat(amt), monthKey: currentMonthKey.value, createdAt: serverTimestamp()
+                    providerId: pId,
+                    amount: parseFloat(amt),
+                    comment: (comment || '').trim(),
+                    monthKey: currentMonthKey.value,
+                    createdAt: serverTimestamp()
                 });
             };
             const deleteBill = async (id) => await deleteDoc(doc(db, `users/${user.value.uid}/bills`, id));
@@ -2514,9 +2549,9 @@
             // Tervezési jegyzetekből származó KIZÁRÓLAG POZITÍV összegek listája
             const currentMonthNoteIncomes = computed(() => {
                 const items = [];
-                const includeCompleted = userSettings.value.includeCompletedTodos !== false;
                 for (const note of notes.value) {
-                    if (note.type === 'todo' && note.isDone && !includeCompleted) continue;
+                    // V20: Teendőknél (# todo) csak akkor jelenik meg bevételként a Bevételek oldalon, ha ki van pipálva!
+                    if (note.type === 'todo' && !note.isDone) continue;
                     const amounts = extractAmountsFromText(note.content);
                     for (let idx = 0; idx < amounts.length; idx++) {
                         const amt = amounts[idx];
