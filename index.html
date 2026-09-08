@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Money manager v17 | Napi Kerettel</title>
+    <title>Money manager v18 | Napi Kerettel</title>
 
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -72,7 +72,7 @@
             <div class="p-6 border-b border-slate-700/50">
                 <div class="flex items-center justify-between">
                     <h2 class="text-xl font-bold text-white">Money<span class="text-indigo-500"> manager</span></h2>
-                    <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-bold">v17</span>
+                    <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-bold">v18</span>
                 </div>
                 <p class="text-xs text-slate-500 mt-1">{{ user.email }}</p>
             </div>
@@ -89,6 +89,11 @@
                 <button @click="currentView = 'shared'" :class="currentView === 'shared' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:bg-slate-800'" class="w-full text-left p-3 rounded-lg flex items-center gap-3 transition">
                     <i class="ph-bold ph-users text-xl"></i> Megosztott pénzügyek
                 </button>
+
+                <!-- V18: Félretett pénz / Vésztartalék -->
+                <button @click="currentView = 'savings'" :class="currentView === 'savings' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:bg-slate-800'" class="w-full text-left p-3 rounded-lg flex items-center gap-3 transition">
+                    <i class="ph-bold ph-vault text-xl"></i> Félretett pénz / Vésztartalék
+                </button>
             </nav>
             <div class="p-4 border-t border-slate-700/50">
                 <button @click="showSettingsModal = true" class="w-full p-2 text-slate-400 hover:text-white flex items-center gap-2 transition text-sm mb-1">
@@ -103,13 +108,14 @@
         <div class="md:hidden fixed top-0 w-full glass z-50 p-4 flex justify-between items-center">
             <div class="flex items-center gap-2">
                 <span class="font-bold text-lg">Money manager</span>
-                <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-bold">v17</span>
+                <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-bold">v18</span>
             </div>
             <div class="flex gap-3 items-center">
                 <button @click="currentView = 'dashboard'" :class="currentView === 'dashboard' ? 'text-indigo-400' : 'text-slate-400'" title="Áttekintés"><i class="ph-bold ph-chart-pie-slice text-2xl"></i></button>
                 <button @click="currentView = 'income'" :class="currentView === 'income' ? 'text-indigo-400' : 'text-slate-400'" title="Bevételek"><i class="ph-bold ph-wallet text-2xl"></i></button>
                 <button @click="currentView = 'planning'" :class="currentView === 'planning' ? 'text-indigo-400' : 'text-slate-400'" title="Tervezés"><i class="ph-bold ph-notebook text-2xl"></i></button>
                 <button @click="currentView = 'shared'" :class="currentView === 'shared' ? 'text-indigo-400' : 'text-slate-400'" title="Megosztott"><i class="ph-bold ph-users text-2xl"></i></button>
+                <button @click="currentView = 'savings'" :class="currentView === 'savings' ? 'text-indigo-400' : 'text-slate-400'" title="Félretett pénz / Vésztartalék"><i class="ph-bold ph-vault text-2xl"></i></button>
                 <button @click="showSettingsModal = true" class="text-slate-400" title="Beállítások"><i class="ph-bold ph-gear text-2xl"></i></button>
                 <button @click="logout" class="text-red-400" title="Kijelentkezés"><i class="ph-bold ph-sign-out text-2xl"></i></button>
             </div>
@@ -940,6 +946,338 @@
                     </div>
                 </div> <!-- End shared view -->
 
+                <!-- ==================== V18: FÉLRETETT PÉNZ / VÉSZTARTALÉK NÉZET ==================== -->
+                <div v-if="currentView === 'savings'" class="space-y-6 animate-fade-in">
+                    <!-- Fejléc -->
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                        <div>
+                            <h2 class="text-2xl font-bold text-white flex items-center gap-3">
+                                <span class="p-2 rounded-xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">
+                                    <i class="ph-duotone ph-vault text-2xl"></i>
+                                </span>
+                                <span>Félretett pénz / Vésztartalék</span>
+                            </h2>
+                            <p class="text-sm text-slate-400 mt-1">Folyamatos megtakarítási napló és intelligens vésztartalék kalkulátor a havi fix kiadások alapján.</p>
+                        </div>
+                        <button @click="openNewSavingsModal" class="bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2.5 rounded-xl font-bold flex items-center gap-2 transition shadow-lg shadow-indigo-600/30 active:scale-95">
+                            <i class="ph-bold ph-plus-circle text-lg"></i>
+                            <span>Pénz félretétele</span>
+                        </button>
+                    </div>
+
+                    <!-- Felső KPI Összesítő Kártyák -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <!-- 1. Jelenlegi félretett pénz -->
+                        <div class="glass p-5 rounded-2xl relative overflow-hidden border border-slate-700/60 flex flex-col justify-between">
+                            <div class="flex items-center justify-between mb-3">
+                                <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Jelenlegi Félretett Pénz</span>
+                                <span class="p-2 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                                    <i class="ph-duotone ph-piggy-bank text-xl"></i>
+                                </span>
+                            </div>
+                            <div>
+                                <p class="text-3xl font-extrabold text-emerald-400">{{ formatCurrency(totalSavingsBalance) }}</p>
+                                <p class="text-xs text-slate-400 mt-1 flex items-center gap-1">
+                                    <i class="ph-bold ph-arrows-clockwise"></i>
+                                    <span>Folyamatos egyenleg ({{ sortedSavingsEntries.length }} db tranzakció)</span>
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- 2. Célzott vésztartalék -->
+                        <div class="glass p-5 rounded-2xl relative overflow-hidden border border-slate-700/60 flex flex-col justify-between">
+                            <div class="flex items-center justify-between mb-3">
+                                <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Célzott Vésztartalék ({{ emergencySettings.targetMonths }} hó)</span>
+                                <span class="p-2 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+                                    <i class="ph-duotone ph-shield-check text-xl"></i>
+                                </span>
+                            </div>
+                            <div>
+                                <p class="text-3xl font-extrabold text-indigo-300">{{ formatCurrency(emergencyFundTarget) }}</p>
+                                <p class="text-xs text-slate-400 mt-1 flex items-center gap-1">
+                                    <span class="font-medium text-slate-300">{{ formatCurrency(monthlyRequiredExpense) }}/hó</span>
+                                    <span>({{ emergencySettings.mode === 'calculated' ? 'számlák átlaga' : 'fix havi kiadás' }})</span>
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- 3. Fedezettség és Progress -->
+                        <div class="glass p-5 rounded-2xl relative overflow-hidden border border-slate-700/60 flex flex-col justify-between">
+                            <div class="flex items-center justify-between mb-3">
+                                <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Tartalék Fedezettség</span>
+                                <span class="p-2 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                                    <i class="ph-duotone ph-chart-line-up text-xl"></i>
+                                </span>
+                            </div>
+                            <div>
+                                <div class="flex items-baseline gap-2">
+                                    <span class="text-3xl font-extrabold text-white">{{ coverageMonthsFormatted }}</span>
+                                    <span class="text-sm font-medium text-slate-400">hónap biztonság</span>
+                                </div>
+                                <div class="w-full bg-slate-700/50 h-2.5 rounded-full overflow-hidden mt-2">
+                                    <div class="h-full rounded-full transition-all duration-500" 
+                                         :class="savingsProgressPercent >= 100 ? 'bg-emerald-500' : (savingsProgressPercent >= 50 ? 'bg-indigo-500' : 'bg-amber-500')" 
+                                         :style="{ width: Math.min(savingsProgressPercent, 100) + '%' }">
+                                    </div>
+                                </div>
+                                <div class="flex justify-between text-[11px] text-slate-400 mt-1.5">
+                                    <span>{{ savingsProgressPercent }}% fedezve</span>
+                                    <span v-if="remainingToTarget > 0" class="text-amber-400 font-medium">Még {{ formatCurrency(remainingToTarget) }} hiányzik</span>
+                                    <span v-else class="text-emerald-400 font-medium">Cél elérve! 🎉</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Két Oszlopos Tartalom: Kalkulátor és Előzmények -->
+                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                        
+                        <!-- BAL OLDAL: Vésztartalék Számoló (7 oszlop) -->
+                        <div class="lg:col-span-7 glass p-6 rounded-2xl border border-slate-700/60 space-y-5">
+                            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pb-4 border-b border-slate-700/50">
+                                <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                                    <i class="ph-bold ph-calculator text-indigo-400"></i>
+                                    <span>Vésztartalék Számoló</span>
+                                </h3>
+
+                                <!-- Mód kapcsoló -->
+                                <div class="inline-flex bg-slate-900/80 p-1 rounded-xl border border-slate-700 text-xs">
+                                    <button @click="setEmergencyMode('calculated')" 
+                                            :class="emergencySettings.mode === 'calculated' ? 'bg-indigo-600 text-white font-bold shadow' : 'text-slate-400 hover:text-white'" 
+                                            class="px-3 py-1.5 rounded-lg transition flex items-center gap-1.5">
+                                        <i class="ph-bold ph-receipt"></i>
+                                        <span>Számlák átlaga</span>
+                                    </button>
+                                    <button @click="setEmergencyMode('manual')" 
+                                            :class="emergencySettings.mode === 'manual' ? 'bg-indigo-600 text-white font-bold shadow' : 'text-slate-400 hover:text-white'" 
+                                            class="px-3 py-1.5 rounded-lg transition flex items-center gap-1.5">
+                                        <i class="ph-bold ph-pencil-simple"></i>
+                                        <span>Fix havi összeg</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- 1. Lépés: Hány hónapra szeretnénk felkészülni? -->
+                            <div class="space-y-2">
+                                <label class="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
+                                    <i class="ph-bold ph-calendar-blank text-indigo-400"></i>
+                                    <span>Hány hónapra szeretnél felkészülni? (Célzott biztonsági időtartam)</span>
+                                </label>
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <button v-for="m in [1, 2, 3, 6, 12]" :key="m" 
+                                            @click="setTargetMonths(m)" 
+                                            :class="emergencySettings.targetMonths === m ? 'bg-indigo-600 text-white border-indigo-500' : 'bg-slate-800/80 text-slate-300 border-slate-700 hover:bg-slate-700'" 
+                                            class="px-3 py-1.5 rounded-lg text-xs font-bold border transition">
+                                        {{ m }} hónap
+                                    </button>
+                                    <div class="flex items-center gap-1 ml-auto">
+                                        <span class="text-xs text-slate-400">Egyedi:</span>
+                                        <input type="number" min="1" max="120" v-model.number="emergencySettings.targetMonths" @change="saveEmergencySettings"
+                                               class="w-16 bg-slate-900/90 border border-slate-700 rounded-lg px-2 py-1 text-xs text-white text-center focus:outline-none focus:border-indigo-500 font-bold" />
+                                        <span class="text-xs text-slate-400">hó</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 2. Lépés: Számítási mód részletei -->
+                            
+                            <!-- A MÓD: Szolgáltatók számlái alapján kalkulált átlag -->
+                            <div v-if="emergencySettings.mode === 'calculated'" class="space-y-4 pt-2 border-t border-slate-700/40">
+                                <div>
+                                    <div class="flex items-center justify-between mb-1.5">
+                                        <label class="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
+                                            <i class="ph-bold ph-check-square-offset text-indigo-400"></i>
+                                            <span>Kötelező havi szolgáltatók / számlák kiválasztása:</span>
+                                        </label>
+                                        <div class="flex items-center gap-2 text-xs">
+                                            <button @click="selectAllProviders" class="text-indigo-400 hover:text-indigo-300 hover:underline">Összes</button>
+                                            <span class="text-slate-600">•</span>
+                                            <button @click="deselectAllProviders" class="text-slate-400 hover:text-slate-300 hover:underline">Törlés</button>
+                                        </div>
+                                    </div>
+                                    <p class="text-xs text-slate-400 mb-3">Válaszd ki azokat a szolgáltatókat, amelyek minden hónapban kötelező kiadást jelentenek (pl. Áram, Víz, Telefon, Adó).</p>
+
+                                    <!-- Szolgáltatók listája / checkboxok -->
+                                    <div v-if="providers.length > 0" class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                        <div v-for="prov in providers" :key="prov.id" 
+                                             @click="toggleProviderSelection(prov.id)"
+                                             :class="emergencySettings.selectedProviderIds && emergencySettings.selectedProviderIds.includes(prov.id) ? 'bg-indigo-600/20 border-indigo-500 text-white' : 'bg-slate-800/40 border-slate-700/60 text-slate-400 hover:bg-slate-800/70'"
+                                             class="p-2.5 rounded-xl border flex items-center gap-2 cursor-pointer transition select-none">
+                                            <div class="w-4 h-4 rounded border flex items-center justify-center text-xs"
+                                                 :class="emergencySettings.selectedProviderIds && emergencySettings.selectedProviderIds.includes(prov.id) ? 'bg-indigo-600 border-indigo-500 text-white' : 'border-slate-600 bg-slate-900/50'">
+                                                <i v-if="emergencySettings.selectedProviderIds && emergencySettings.selectedProviderIds.includes(prov.id)" class="ph-bold ph-check text-[10px]"></i>
+                                            </div>
+                                            <span class="w-2.5 h-2.5 rounded-full flex-shrink-0" :style="{ backgroundColor: prov.color || '#6366f1' }"></span>
+                                            <span class="text-xs font-semibold truncate">{{ prov.name }}</span>
+                                        </div>
+                                    </div>
+                                    <div v-else class="text-xs text-slate-500 bg-slate-900/40 p-3 rounded-lg border border-slate-800">
+                                        Még nincsenek szolgáltatók rögzítve az Áttekintés fülön.
+                                    </div>
+                                </div>
+
+                                <!-- Minta időszak beállítása -->
+                                <div class="flex items-center justify-between gap-2 pt-2 text-xs">
+                                    <span class="text-slate-400">Minta időszak az átlagszámításhoz:</span>
+                                    <div class="flex items-center gap-1.5">
+                                        <button v-for="c in [2, 3, 6, 'all']" :key="c" 
+                                                @click="setSampleMonthsCount(c)"
+                                                :class="emergencySettings.sampleMonthsCount === c ? 'bg-indigo-600 text-white font-bold' : 'bg-slate-800 text-slate-400 hover:text-white'"
+                                                class="px-2 py-1 rounded text-xs transition">
+                                            {{ c === 'all' ? 'Összes hó' : c + ' hó' }}
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Hónapok részletes bontása (History breakdown) -->
+                                <div class="space-y-2 pt-2">
+                                    <span class="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+                                        <i class="ph-bold ph-list-numbers text-indigo-400"></i>
+                                        <span>Számlák alakulása a vizsgált hónapokban:</span>
+                                    </span>
+
+                                    <div v-if="monthlyProviderBreakdown.length > 0" class="space-y-2 max-h-48 overflow-y-auto pr-1">
+                                        <div v-for="m in monthlyProviderBreakdown" :key="m.monthKey" class="bg-slate-900/60 border border-slate-800 p-3 rounded-xl flex flex-col gap-1.5 text-xs">
+                                            <div class="flex justify-between items-center">
+                                                <span class="font-bold text-indigo-300 capitalize">{{ m.formattedMonth }}</span>
+                                                <span class="font-bold text-white bg-slate-800 px-2 py-0.5 rounded border border-slate-700">Havi összeg: {{ formatCurrency(m.total) }}</span>
+                                            </div>
+                                            <div class="flex flex-wrap gap-1.5 mt-1">
+                                                <span v-for="item in m.items" :key="item.providerId" class="inline-flex items-center gap-1 bg-slate-800/80 px-2 py-0.5 rounded text-[11px] text-slate-300 border border-slate-700/50">
+                                                    <span class="w-1.5 h-1.5 rounded-full" :style="{ backgroundColor: item.color }"></span>
+                                                    <span>{{ item.providerName }}:</span>
+                                                    <span class="font-semibold text-white">{{ formatCurrency(item.amount) }}</span>
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div v-else class="text-xs text-slate-400 bg-slate-900/40 p-4 rounded-xl border border-slate-800 text-center">
+                                        A kiválasztott szolgáltatókhoz még nem található rögzített számla a korábbi hónapokban.
+                                    </div>
+                                </div>
+
+                                <!-- Számítás eredménye doboz -->
+                                <div class="bg-gradient-to-r from-indigo-950/40 to-slate-900/80 border border-indigo-500/30 p-4 rounded-xl space-y-2">
+                                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                                        <div>
+                                            <span class="text-xs text-slate-400 block">Számított havi átlagos kötelező kiadás:</span>
+                                            <span class="text-xl font-bold text-indigo-300">{{ formatCurrency(calculatedAverageMonthly) }} / hó</span>
+                                        </div>
+                                        <button @click="applyCalculatedToManual" class="text-xs bg-slate-800 hover:bg-slate-700 text-indigo-300 border border-indigo-500/30 px-3 py-1.5 rounded-lg transition flex items-center gap-1.5">
+                                            <i class="ph-bold ph-copy"></i>
+                                            <span>Átlag mentése fix összegként</span>
+                                        </button>
+                                    </div>
+                                    <p class="text-xs text-slate-300 pt-2 border-t border-slate-800 flex items-center gap-1.5">
+                                        <i class="ph-bold ph-equals text-indigo-400"></i>
+                                        <span>Számítás: {{ emergencySettings.targetMonths }} hónap × {{ formatCurrency(calculatedAverageMonthly) }} = <b class="text-white">{{ formatCurrency(emergencyFundTarget) }}</b> szükséges vésztartalék.</span>
+                                    </p>
+                                </div>
+                            </div>
+
+                            <!-- B MÓD: Fix havi összeg közvetlen megadása -->
+                            <div v-else class="space-y-4 pt-2 border-t border-slate-700/40">
+                                <div>
+                                    <label class="text-xs font-bold uppercase tracking-wider text-slate-300 block mb-1">
+                                        Havi fix kötelező kiadás összege:
+                                    </label>
+                                    <div class="relative">
+                                        <input type="number" min="0" step="10" v-model.number="emergencySettings.manualMonthlyAmount" @change="saveEmergencySettings"
+                                               class="w-full bg-slate-900/90 border border-slate-700 rounded-xl px-4 py-2.5 text-white font-bold focus:outline-none focus:border-indigo-500 pl-4 pr-16"
+                                               placeholder="pl. 650" />
+                                        <span class="absolute right-4 top-2.5 text-slate-400 font-bold text-sm">RON / hó</span>
+                                    </div>
+                                    <p class="text-xs text-slate-400 mt-2">
+                                        Megadhatod fixen, mekkora az a havi kötelező összeg, amire vészhelyzet esetén mindenképpen szükséged van (számlák, megélhetés).
+                                    </p>
+                                </div>
+
+                                <div v-if="calculatedAverageMonthly > 0" class="flex items-center justify-between bg-slate-900/50 p-3 rounded-xl border border-slate-800 text-xs">
+                                    <span class="text-slate-300">Szolgáltatók korábbi számláinak átlaga: <b class="text-indigo-400">{{ formatCurrency(calculatedAverageMonthly) }}</b></span>
+                                    <button @click="applyCalculatedToManual" class="text-indigo-400 hover:text-indigo-300 font-bold hover:underline flex items-center gap-1">
+                                        <i class="ph-bold ph-arrow-down"></i> Betöltés
+                                    </button>
+                                </div>
+
+                                <!-- Számítás eredménye doboz (Fix mód) -->
+                                <div class="bg-gradient-to-r from-indigo-950/40 to-slate-900/80 border border-indigo-500/30 p-4 rounded-xl">
+                                    <p class="text-xs text-slate-300 flex items-center gap-1.5">
+                                        <i class="ph-bold ph-equals text-indigo-400"></i>
+                                        <span>Számítás: {{ emergencySettings.targetMonths }} hónap × {{ formatCurrency(emergencySettings.manualMonthlyAmount || 0) }} = <b class="text-white text-sm">{{ formatCurrency(emergencyFundTarget) }}</b> szükséges vésztartalék.</span>
+                                    </p>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <!-- JOBB OLDAL: Megtakarítási Napló & Előzmények (5 oszlop) -->
+                        <div class="lg:col-span-5 glass p-6 rounded-2xl border border-slate-700/60 space-y-4">
+                            <div class="flex items-center justify-between pb-3 border-b border-slate-700/50">
+                                <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                                    <i class="ph-bold ph-clock-counter-clockwise text-indigo-400"></i>
+                                    <span>Megtakarítási Előzmények</span>
+                                </h3>
+                                <span class="text-xs bg-slate-800 text-slate-400 px-2.5 py-1 rounded-full border border-slate-700">
+                                    {{ sortedSavingsEntries.length }} tétel
+                                </span>
+                            </div>
+
+                            <!-- Lista -->
+                            <div v-if="sortedSavingsEntries.length > 0" class="space-y-2.5 max-h-[480px] overflow-y-auto pr-1">
+                                <div v-for="entry in sortedSavingsEntries" :key="entry.id" 
+                                     class="p-3.5 rounded-xl bg-slate-900/60 border border-slate-800 hover:border-slate-700 transition flex items-center justify-between gap-3 group">
+                                    <div class="flex items-center gap-3 min-w-0">
+                                        <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                                             :class="entry.type === 'withdrawal' ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'">
+                                            <i class="ph-bold" :class="entry.type === 'withdrawal' ? 'ph-arrow-up-right' : 'ph-arrow-down-left'"></i>
+                                        </div>
+                                        <div class="min-w-0">
+                                            <p class="text-sm font-bold text-white truncate">{{ entry.note || (entry.type === 'withdrawal' ? 'Kivét' : 'Félretett pénz') }}</p>
+                                            <div class="flex items-center gap-2 text-xs text-slate-400 mt-0.5">
+                                                <span>{{ entry.date }}</span>
+                                                <span class="text-slate-600">•</span>
+                                                <span :class="entry.type === 'withdrawal' ? 'text-rose-400' : 'text-emerald-400'">
+                                                    {{ entry.type === 'withdrawal' ? 'Kivét' : 'Félretétel' }}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="flex items-center gap-3 flex-shrink-0">
+                                        <span class="font-extrabold text-sm" :class="entry.type === 'withdrawal' ? 'text-rose-400' : 'text-emerald-400'">
+                                            {{ entry.type === 'withdrawal' ? '-' : '+' }}{{ formatCurrency(entry.amount) }}
+                                        </span>
+                                        <div class="flex items-center gap-1 opacity-60 group-hover:opacity-100 transition">
+                                            <button @click="startEditSavings(entry)" class="p-1.5 text-slate-400 hover:text-indigo-400 rounded-lg hover:bg-slate-800 transition" title="Szerkesztés">
+                                                <i class="ph-bold ph-pencil-simple text-sm"></i>
+                                            </button>
+                                            <button @click="deleteSavingsEntry(entry.id)" class="p-1.5 text-slate-400 hover:text-rose-400 rounded-lg hover:bg-slate-800 transition" title="Törlés">
+                                                <i class="ph-bold ph-trash text-sm"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Üres állapot -->
+                            <div v-else class="text-center py-10 px-4 space-y-3">
+                                <div class="w-12 h-12 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center mx-auto text-2xl">
+                                    <i class="ph-duotone ph-piggy-bank"></i>
+                                </div>
+                                <div>
+                                    <p class="text-sm font-bold text-white">Még nem rögzítettél félretett pénzt</p>
+                                    <p class="text-xs text-slate-400 mt-1 max-w-xs mx-auto">Jegyezd fel, ha pénzt raksz félre a vésztartalékba vagy megtakarítási céllal!</p>
+                                </div>
+                                <button @click="openNewSavingsModal" class="text-xs bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-3.5 py-2 rounded-lg transition inline-flex items-center gap-1.5">
+                                    <i class="ph-bold ph-plus-circle"></i>
+                                    <span>Első összeg feljegyzése</span>
+                                </button>
+                            </div>
+                        </div>
+
+                    </div>
+                </div> <!-- End savings view -->
+
             </div>
 
         </main>
@@ -1015,6 +1353,149 @@
                 </div>
             </div>
         </transition>
+        
+        <!-- ==================== V18: ÚJ MEGTAKARÍTÁS MODAL ==================== -->
+        <transition name="modal">
+            <div v-if="showSavingsModal" class="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                <div class="absolute inset-0 bg-slate-900/80 backdrop-blur-sm" @click="showSavingsModal = false"></div>
+                <div class="glass modal-content w-full max-w-md rounded-2xl p-6 relative z-10 border border-slate-700 shadow-2xl space-y-4">
+                    <div class="flex justify-between items-center pb-3 border-b border-slate-700/60">
+                        <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                            <i class="ph-bold ph-piggy-bank text-indigo-400"></i>
+                            <span>Pénz félretétele / Megtakarítás</span>
+                        </h3>
+                        <button @click="showSavingsModal = false" class="text-slate-400 hover:text-white transition">
+                            <i class="ph-bold ph-x text-lg"></i>
+                        </button>
+                    </div>
+
+                    <form @submit.prevent="addSavingsEntry" class="space-y-4">
+                        <!-- Típus: Befizetés vagy Kivét -->
+                        <div>
+                            <label class="text-xs font-bold uppercase tracking-wider text-slate-300 block mb-1.5">Tranzakció típusa</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                <button type="button" @click="newSavingsEntry.type = 'deposit'"
+                                        :class="newSavingsEntry.type === 'deposit' ? 'bg-emerald-600 text-white border-emerald-500 font-bold shadow' : 'bg-slate-800 text-slate-400 border-slate-700'"
+                                        class="p-2.5 rounded-xl border text-xs flex items-center justify-center gap-2 transition">
+                                    <i class="ph-bold ph-plus-circle"></i>
+                                    <span>Félretétel (+)</span>
+                                </button>
+                                <button type="button" @click="newSavingsEntry.type = 'withdrawal'"
+                                        :class="newSavingsEntry.type === 'withdrawal' ? 'bg-rose-600 text-white border-rose-500 font-bold shadow' : 'bg-slate-800 text-slate-400 border-slate-700'"
+                                        class="p-2.5 rounded-xl border text-xs flex items-center justify-center gap-2 transition">
+                                    <i class="ph-bold ph-minus-circle"></i>
+                                    <span>Kivét (-)</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Összeg -->
+                        <div>
+                            <label class="text-xs font-bold uppercase tracking-wider text-slate-300 block mb-1">Összeg (RON)</label>
+                            <div class="relative">
+                                <input type="number" step="any" min="0.01" required v-model="newSavingsEntry.amount"
+                                       class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-white font-bold focus:outline-none focus:border-indigo-500 pl-4 pr-14 text-lg"
+                                       placeholder="pl. 500" autofocus />
+                                <span class="absolute right-4 top-3 text-slate-400 font-bold text-sm">RON</span>
+                            </div>
+                        </div>
+
+                        <!-- Dátum -->
+                        <div>
+                            <label class="text-xs font-bold uppercase tracking-wider text-slate-300 block mb-1">Dátum</label>
+                            <input type="date" required v-model="newSavingsEntry.date"
+                                   class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-white text-sm focus:outline-none focus:border-indigo-500" />
+                        </div>
+
+                        <!-- Megjegyzés / Cél -->
+                        <div>
+                            <label class="text-xs font-bold uppercase tracking-wider text-slate-300 block mb-1">Megjegyzés / Cél</label>
+                            <input type="text" v-model="newSavingsEntry.note"
+                                   class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-white text-sm focus:outline-none focus:border-indigo-500 mb-2"
+                                   placeholder="pl. Vésztartalék alap, Nyaralás, Autó javítás..." />
+                            <!-- Gyors címkék -->
+                            <div class="flex flex-wrap gap-1.5">
+                                <button type="button" v-for="tag in ['Vésztartalék', 'Általános megtakarítás', 'Autó szerviz', 'Nyaralás', 'Egészségügyi alap']" :key="tag"
+                                        @click="newSavingsEntry.note = tag"
+                                        class="text-[11px] bg-slate-800 hover:bg-slate-700 text-slate-300 px-2.5 py-1 rounded-lg border border-slate-700 transition">
+                                    {{ tag }}
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="flex justify-end gap-2 pt-3 border-t border-slate-700/60">
+                            <button type="button" @click="showSavingsModal = false" class="px-4 py-2 rounded-xl text-slate-400 hover:text-white transition text-sm">Mégse</button>
+                            <button type="submit" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-5 py-2 rounded-xl transition text-sm shadow-lg shadow-indigo-600/30">Mentés</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </transition>
+
+        <!-- ==================== V18: MEGTAKARÍTÁS SZERKESZTÉSE MODAL ==================== -->
+        <transition name="modal">
+            <div v-if="showEditSavingsModal" class="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                <div class="absolute inset-0 bg-slate-900/80 backdrop-blur-sm" @click="showEditSavingsModal = false"></div>
+                <div class="glass modal-content w-full max-w-md rounded-2xl p-6 relative z-10 border border-slate-700 shadow-2xl space-y-4">
+                    <div class="flex justify-between items-center pb-3 border-b border-slate-700/60">
+                        <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                            <i class="ph-bold ph-pencil-simple text-indigo-400"></i>
+                            <span>Megtakarítás szerkesztése</span>
+                        </h3>
+                        <button @click="showEditSavingsModal = false" class="text-slate-400 hover:text-white transition">
+                            <i class="ph-bold ph-x text-lg"></i>
+                        </button>
+                    </div>
+
+                    <form @submit.prevent="saveEditSavings" class="space-y-4">
+                        <div>
+                            <label class="text-xs font-bold uppercase tracking-wider text-slate-300 block mb-1.5">Tranzakció típusa</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                <button type="button" @click="editingSavingsEntry.type = 'deposit'"
+                                        :class="editingSavingsEntry.type === 'deposit' ? 'bg-emerald-600 text-white border-emerald-500 font-bold shadow' : 'bg-slate-800 text-slate-400 border-slate-700'"
+                                        class="p-2.5 rounded-xl border text-xs flex items-center justify-center gap-2 transition">
+                                    <i class="ph-bold ph-plus-circle"></i>
+                                    <span>Félretétel (+)</span>
+                                </button>
+                                <button type="button" @click="editingSavingsEntry.type = 'withdrawal'"
+                                        :class="editingSavingsEntry.type === 'withdrawal' ? 'bg-rose-600 text-white border-rose-500 font-bold shadow' : 'bg-slate-800 text-slate-400 border-slate-700'"
+                                        class="p-2.5 rounded-xl border text-xs flex items-center justify-center gap-2 transition">
+                                    <i class="ph-bold ph-minus-circle"></i>
+                                    <span>Kivét (-)</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="text-xs font-bold uppercase tracking-wider text-slate-300 block mb-1">Összeg (RON)</label>
+                            <div class="relative">
+                                <input type="number" step="any" min="0.01" required v-model="editingSavingsEntry.amount"
+                                       class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-white font-bold focus:outline-none focus:border-indigo-500 pl-4 pr-14 text-lg" />
+                                <span class="absolute right-4 top-3 text-slate-400 font-bold text-sm">RON</span>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="text-xs font-bold uppercase tracking-wider text-slate-300 block mb-1">Dátum</label>
+                            <input type="date" required v-model="editingSavingsEntry.date"
+                                   class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-white text-sm focus:outline-none focus:border-indigo-500" />
+                        </div>
+
+                        <div>
+                            <label class="text-xs font-bold uppercase tracking-wider text-slate-300 block mb-1">Megjegyzés / Cél</label>
+                            <input type="text" v-model="editingSavingsEntry.note"
+                                   class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-white text-sm focus:outline-none focus:border-indigo-500" />
+                        </div>
+
+                        <div class="flex justify-end gap-2 pt-3 border-t border-slate-700/60">
+                            <button type="button" @click="showEditSavingsModal = false" class="px-4 py-2 rounded-xl text-slate-400 hover:text-white transition text-sm">Mégse</button>
+                            <button type="submit" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-5 py-2 rounded-xl transition text-sm shadow-lg shadow-indigo-600/30">Mentés</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </transition>
+
         <transition name="modal">
             <div v-if="showSettingsModal" class="fixed inset-0 z-[100] flex items-center justify-center p-4">
                 <div class="absolute inset-0 bg-slate-900/80 backdrop-blur-sm" @click="showSettingsModal = false"></div>
@@ -1125,6 +1606,10 @@
                                     <input type="radio" v-model="userSettings.defaultView" value="shared" @change="saveSettings" class="accent-indigo-500 w-4 h-4">
                                     <span class="text-slate-200 text-sm flex items-center gap-2"><i class="ph-bold ph-users text-indigo-400"></i>Megosztott pénzügyek</span>
                                 </label>
+                                <label class="flex items-center gap-3 p-2.5 bg-slate-800/50 rounded-lg cursor-pointer border border-transparent hover:border-indigo-500/30 transition">
+                                    <input type="radio" v-model="userSettings.defaultView" value="savings" @change="saveSettings" class="accent-indigo-500 w-4 h-4">
+                                    <span class="text-slate-200 text-sm flex items-center gap-2"><i class="ph-bold ph-vault text-indigo-400"></i>Félretett pénz / Vésztartalék</span>
+                                </label>
                             </div>
                         </div>
 
@@ -1191,6 +1676,27 @@
             const allInstallments = ref([]);
             const notes = ref([]);
             const newNoteContent = ref('');
+
+            // --- V18: Félretett pénz / Vésztartalék állapot ---
+            const savingsEntries = ref([]);
+            const allBills = ref([]);
+            const emergencySettings = ref({
+                mode: 'calculated',
+                targetMonths: 6,
+                manualMonthlyAmount: 650,
+                selectedProviderIds: [],
+                sampleMonthsCount: 3
+            });
+            const newSavingsEntry = ref({
+                amount: '',
+                type: 'deposit',
+                date: new Date().toISOString().split('T')[0],
+                note: ''
+            });
+            const editingSavingsId = ref(null);
+            const editingSavingsEntry = ref({});
+            const showSavingsModal = ref(false);
+            const showEditSavingsModal = ref(false);
 
             // --- V16: Részletes bevételek állapot ---
             const recurringIncomes = ref([]);
@@ -1334,6 +1840,33 @@
                 onSnapshot(query(collection(db, `users/${uid}/recurring_incomes`)), (snap) => {
                     recurringIncomes.value = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (parseInt(a.day) || 1) - (parseInt(b.day) || 1));
                 });
+
+                // V18: Félretett pénz / Megtakarítások figyelése (folyamatos, nem havonta változik)
+                onSnapshot(query(collection(db, `users/${uid}/savings_entries`)), (snap) => {
+                    savingsEntries.value = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                });
+
+                // V18: Vésztartalék beállítások figyelése
+                onSnapshot(doc(db, `users/${uid}/savings_settings/config`), (docSnap) => {
+                    if (docSnap.exists()) {
+                        const data = docSnap.data();
+                        emergencySettings.value = {
+                            mode: data.mode || 'calculated',
+                            targetMonths: data.targetMonths !== undefined ? data.targetMonths : 6,
+                            manualMonthlyAmount: data.manualMonthlyAmount !== undefined ? data.manualMonthlyAmount : 650,
+                            selectedProviderIds: Array.isArray(data.selectedProviderIds) ? data.selectedProviderIds : [],
+                            sampleMonthsCount: data.sampleMonthsCount !== undefined ? data.sampleMonthsCount : 3,
+                            ...data
+                        };
+                    } else if (providers.value.length > 0 && (!emergencySettings.value.selectedProviderIds || emergencySettings.value.selectedProviderIds.length === 0)) {
+                        emergencySettings.value.selectedProviderIds = providers.value.map(p => p.id);
+                    }
+                });
+
+                // V18: Összes rögzített számla figyelése a történeti átlagszámításhoz
+                onSnapshot(query(collection(db, `users/${uid}/bills`)), (snap) => {
+                    allBills.value = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                });
                 // Saját megosztások
                 onSnapshot(query(collection(db, `users/${uid}/shared`)), (snap) => {
                     const items = snap.docs.map(d => ({ id: d.id, ownerUid: uid, isOwner: true, ...d.data(), payments: [] }));
@@ -1373,6 +1906,8 @@
             };
 
             const resetData = () => {
+                savingsEntries.value = [];
+                allBills.value = [];
                 providers.value = [];
                 bills.value = [];
                 allInstallments.value = [];
@@ -2415,6 +2950,272 @@
 
             const formatCurrency = (val) => new Intl.NumberFormat('ro-RO', { style: 'currency', currency: 'RON', minimumFractionDigits: 0 }).format(val);
 
+
+            // ==================== V18: FÉLRETETT PÉNZ & VÉSZTARTALÉK LOGIKA ====================
+            const openNewSavingsModal = () => {
+                newSavingsEntry.value = {
+                    amount: '',
+                    type: 'deposit',
+                    date: new Date().toISOString().split('T')[0],
+                    note: ''
+                };
+                showSavingsModal.value = true;
+            };
+
+            const addSavingsEntry = async () => {
+                if (!newSavingsEntry.value.amount || parseFloat(newSavingsEntry.value.amount) <= 0) {
+                    alert('Kérlek adj meg egy érvényes összeget!');
+                    return;
+                }
+                if (!user.value) return;
+                try {
+                    await addDoc(collection(db, `users/${user.value.uid}/savings_entries`), {
+                        amount: parseFloat(newSavingsEntry.value.amount),
+                        type: newSavingsEntry.value.type || 'deposit',
+                        date: newSavingsEntry.value.date || new Date().toISOString().split('T')[0],
+                        note: (newSavingsEntry.value.note || '').trim(),
+                        createdAt: serverTimestamp()
+                    });
+                    showSavingsModal.value = false;
+                    newSavingsEntry.value = {
+                        amount: '',
+                        type: 'deposit',
+                        date: new Date().toISOString().split('T')[0],
+                        note: ''
+                    };
+                } catch (e) {
+                    console.error("Hiba megtakarítás mentésekor:", e);
+                    alert("Hiba történt mentéskor: " + e.message);
+                }
+            };
+
+            const startEditSavings = (entry) => {
+                editingSavingsId.value = entry.id;
+                editingSavingsEntry.value = {
+                    id: entry.id,
+                    amount: entry.amount,
+                    type: entry.type || 'deposit',
+                    date: entry.date || new Date().toISOString().split('T')[0],
+                    note: entry.note || ''
+                };
+                showEditSavingsModal.value = true;
+            };
+
+            const saveEditSavings = async () => {
+                if (!editingSavingsEntry.value.amount || parseFloat(editingSavingsEntry.value.amount) <= 0) {
+                    alert('Kérlek adj meg egy érvényes összeget!');
+                    return;
+                }
+                if (!user.value || !editingSavingsId.value) return;
+                try {
+                    await updateDoc(doc(db, `users/${user.value.uid}/savings_entries`, editingSavingsId.value), {
+                        amount: parseFloat(editingSavingsEntry.value.amount),
+                        type: editingSavingsEntry.value.type || 'deposit',
+                        date: editingSavingsEntry.value.date || new Date().toISOString().split('T')[0],
+                        note: (editingSavingsEntry.value.note || '').trim()
+                    });
+                    showEditSavingsModal.value = false;
+                    editingSavingsId.value = null;
+                } catch (e) {
+                    console.error("Hiba módosításkor:", e);
+                    alert("Hiba történt módosításkor: " + e.message);
+                }
+            };
+
+            const deleteSavingsEntry = async (id) => {
+                if (!confirm('Biztosan törölni szeretnéd ezt a tételt?')) return;
+                if (!user.value) return;
+                try {
+                    await deleteDoc(doc(db, `users/${user.value.uid}/savings_entries`, id));
+                } catch (e) {
+                    console.error("Hiba törléskor:", e);
+                    alert("Hiba történt törléskor: " + e.message);
+                }
+            };
+
+            const saveEmergencySettings = async () => {
+                if (!user.value) return;
+                try {
+                    await setDoc(doc(db, `users/${user.value.uid}/savings_settings/config`), {
+                        mode: emergencySettings.value.mode,
+                        targetMonths: parseInt(emergencySettings.value.targetMonths) || 6,
+                        manualMonthlyAmount: parseFloat(emergencySettings.value.manualMonthlyAmount) || 0,
+                        selectedProviderIds: emergencySettings.value.selectedProviderIds || [],
+                        sampleMonthsCount: emergencySettings.value.sampleMonthsCount || 3,
+                        updatedAt: serverTimestamp()
+                    }, { merge: true });
+                } catch (e) {
+                    console.error("Hiba a vésztartalék beállítások mentésekor:", e);
+                }
+            };
+
+            const toggleProviderSelection = (pId) => {
+                if (!emergencySettings.value.selectedProviderIds) emergencySettings.value.selectedProviderIds = [];
+                const idx = emergencySettings.value.selectedProviderIds.indexOf(pId);
+                if (idx > -1) {
+                    emergencySettings.value.selectedProviderIds.splice(idx, 1);
+                } else {
+                    emergencySettings.value.selectedProviderIds.push(pId);
+                }
+                saveEmergencySettings();
+            };
+
+            const selectAllProviders = () => {
+                emergencySettings.value.selectedProviderIds = providers.value.map(p => p.id);
+                saveEmergencySettings();
+            };
+
+            const deselectAllProviders = () => {
+                emergencySettings.value.selectedProviderIds = [];
+                saveEmergencySettings();
+            };
+
+            const setEmergencyMode = (mode) => {
+                emergencySettings.value.mode = mode;
+                saveEmergencySettings();
+            };
+
+            const setTargetMonths = (m) => {
+                emergencySettings.value.targetMonths = parseInt(m) || 1;
+                saveEmergencySettings();
+            };
+
+            const setSampleMonthsCount = (cnt) => {
+                emergencySettings.value.sampleMonthsCount = cnt;
+                saveEmergencySettings();
+            };
+
+            const applyCalculatedToManual = () => {
+                emergencySettings.value.manualMonthlyAmount = calculatedAverageMonthly.value;
+                emergencySettings.value.mode = 'manual';
+                saveEmergencySettings();
+            };
+
+            // Összes félretett pénz (befizetések - kivétek)
+            const totalSavingsBalance = computed(() => {
+                return savingsEntries.value.reduce((sum, entry) => {
+                    const amt = parseFloat(entry.amount) || 0;
+                    return entry.type === 'withdrawal' ? sum - amt : sum + amt;
+                }, 0);
+            });
+
+            // Rendezett megtakarítások (dátum szerint csökkenő)
+            const sortedSavingsEntries = computed(() => {
+                return [...savingsEntries.value].sort((a, b) => {
+                    if (a.date !== b.date) {
+                        return (b.date || '').localeCompare(a.date || '');
+                    }
+                    const tA = a.createdAt?.seconds || 0;
+                    const tB = b.createdAt?.seconds || 0;
+                    return tB - tA;
+                });
+            });
+
+            // Számlákból elérhető egyedi hónapok listája
+            const availableBillMonths = computed(() => {
+                const keys = new Set();
+                allBills.value.forEach(b => {
+                    if (b.monthKey) keys.add(b.monthKey);
+                });
+                return Array.from(keys).sort().reverse();
+            });
+
+            // Minta időszakban vizsgált hónapok
+            const analyzedMonths = computed(() => {
+                const months = availableBillMonths.value;
+                const count = emergencySettings.value.sampleMonthsCount;
+                if (count === 'all' || !count) return months;
+                const n = parseInt(count) || 3;
+                return months.slice(0, n);
+            });
+
+            // Hónaponkénti és szolgáltatónkénti bontás
+            const monthlyProviderBreakdown = computed(() => {
+                const selectedIds = new Set(emergencySettings.value.selectedProviderIds || []);
+                const monthNames = [
+                    'január', 'február', 'március', 'április', 'május', 'június',
+                    'július', 'augusztus', 'szeptember', 'október', 'november', 'december'
+                ];
+
+                return analyzedMonths.value.map(mKey => {
+                    const monthBills = allBills.value.filter(b => b.monthKey === mKey && selectedIds.has(b.providerId));
+                    const providerMap = {};
+                    monthBills.forEach(b => {
+                        providerMap[b.providerId] = (providerMap[b.providerId] || 0) + (parseFloat(b.amount) || 0);
+                    });
+
+                    const items = [];
+                    let total = 0;
+                    providers.value.forEach(p => {
+                        if (selectedIds.has(p.id)) {
+                            const amt = providerMap[p.id] || 0;
+                            items.push({
+                                providerId: p.id,
+                                providerName: p.name,
+                                color: p.color || '#6366f1',
+                                amount: amt
+                            });
+                            total += amt;
+                        }
+                    });
+
+                    const parts = mKey.split('-');
+                    const y = parts[0];
+                    const m = parseInt(parts[1]) || 1;
+                    const formatted = `${y}. ${monthNames[m - 1] || mKey}`;
+
+                    return {
+                        monthKey: mKey,
+                        formattedMonth: formatted,
+                        items,
+                        total
+                    };
+                });
+            });
+
+            // Számított havi átlagos kötelező kiadás
+            const calculatedAverageMonthly = computed(() => {
+                const list = monthlyProviderBreakdown.value;
+                if (list.length === 0) return 0;
+                const sum = list.reduce((acc, m) => acc + m.total, 0);
+                return Math.round(sum / list.length);
+            });
+
+            // Érvényes havi kötelező kiadás (számított vagy fix)
+            const monthlyRequiredExpense = computed(() => {
+                if (emergencySettings.value.mode === 'manual') {
+                    return parseFloat(emergencySettings.value.manualMonthlyAmount) || 0;
+                }
+                return calculatedAverageMonthly.value;
+            });
+
+            // Szükséges vésztartalék célösszeg
+            const emergencyFundTarget = computed(() => {
+                const targetM = parseInt(emergencySettings.value.targetMonths) || 1;
+                return monthlyRequiredExpense.value * targetM;
+            });
+
+            // Hány hónapra elegendő a jelenlegi megtakarítás
+            const coverageMonths = computed(() => {
+                if (monthlyRequiredExpense.value <= 0) return 0;
+                return totalSavingsBalance.value / monthlyRequiredExpense.value;
+            });
+
+            const coverageMonthsFormatted = computed(() => {
+                return coverageMonths.value.toFixed(1);
+            });
+
+            // Százalékos feltöltöttség
+            const savingsProgressPercent = computed(() => {
+                if (emergencyFundTarget.value <= 0) return 0;
+                return Math.min(Math.round((totalSavingsBalance.value / emergencyFundTarget.value) * 100), 1000);
+            });
+
+            // Hiányzó összeg a célhoz
+            const remainingToTarget = computed(() => {
+                return Math.max(0, emergencyFundTarget.value - totalSavingsBalance.value);
+            });
+
             return {
                 user, email, password, isRegistering, authError, handleAuth, logout,
                 currentView,
@@ -2439,7 +3240,15 @@
                 currentMonthNoteIncomes, currentMonthPositiveNoteCount, totalCurrentMonthIncomes, allDisplayIncomeEntries,
                 addRecurringIncome, toggleRecurringAutoAdd, deleteRecurringIncome, startEditRecurring, cancelEditRecurring, saveEditRecurring,
                 addManualIncome, deleteManualIncome,
-                formatMonthKey, getEndMonthKey, formatEndMonth, isRecurringActiveInMonth, getRecurringStatusBadge
+                formatMonthKey, getEndMonthKey, formatEndMonth, isRecurringActiveInMonth, getRecurringStatusBadge,
+                // V18: Félretett pénz & Vésztartalék
+                savingsEntries, allBills, emergencySettings, newSavingsEntry, editingSavingsId, editingSavingsEntry,
+                showSavingsModal, showEditSavingsModal, openNewSavingsModal, addSavingsEntry, startEditSavings,
+                saveEditSavings, deleteSavingsEntry, saveEmergencySettings, toggleProviderSelection, selectAllProviders,
+                deselectAllProviders, setEmergencyMode, setTargetMonths, setSampleMonthsCount, applyCalculatedToManual,
+                totalSavingsBalance, sortedSavingsEntries, availableBillMonths, analyzedMonths, monthlyProviderBreakdown,
+                calculatedAverageMonthly, monthlyRequiredExpense, emergencyFundTarget, coverageMonths, coverageMonthsFormatted,
+                savingsProgressPercent, remainingToTarget
             };
         }
     }).mount('#app');
