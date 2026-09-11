@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Money manager v21 | Napi Kerettel</title>
+    <title>Money manager v22 | Napi Kerettel</title>
 
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -72,7 +72,7 @@
             <div class="p-6 border-b border-slate-700/50">
                 <div class="flex items-center justify-between">
                     <h2 class="text-xl font-bold text-white">Money<span class="text-indigo-500"> manager</span></h2>
-                    <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-bold">v21</span>
+                    <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-bold">v22</span>
                 </div>
                 <p class="text-xs text-slate-500 mt-1">{{ user.email }}</p>
             </div>
@@ -108,7 +108,7 @@
         <div class="md:hidden fixed top-0 w-full glass z-50 p-4 flex justify-between items-center">
             <div class="flex items-center gap-2">
                 <span class="font-bold text-lg">Money manager</span>
-                <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-bold">v21</span>
+                <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-bold">v22</span>
             </div>
             <div class="flex gap-3 items-center">
                 <button @click="currentView = 'dashboard'" :class="currentView === 'dashboard' ? 'text-indigo-400' : 'text-slate-400'" title="Áttekintés"><i class="ph-bold ph-chart-pie-slice text-2xl"></i></button>
@@ -792,7 +792,7 @@
                             <div v-else-if="note.type === 'todo'" class="flex items-start gap-3 pr-16">
                                 <input type="checkbox" :checked="note.isDone" @change="toggleTodo(note)" class="custom-checkbox shrink-0 mt-0.5">
                                 <div class="flex-1 min-w-0">
-                                    <span :class="{ 'line-through-gray': note.isDone }" class="text-slate-200 font-medium transition-all block break-words">{{ note.content }}</span>
+                                    <span :class="{ 'line-through-gray': note.isDone }" class="text-slate-200 font-medium transition-all block break-words whitespace-pre-wrap">{{ note.content }}</span>
                                     
                                     <!-- Felismert összegek címkéi -->
                                     <div v-if="getNoteAmounts(note.content).length > 0" class="flex flex-wrap items-center gap-1.5 mt-2">
@@ -2441,25 +2441,23 @@
             const processNoteInput = async () => {
                 const rawText = newNoteContent.value.trim();
                 if(!rawText) return;
-                const lines = rawText.split('\n');
-                for (let line of lines) {
-                    line = line.trim();
-                    if (!line) continue;
-                    let type = 'text';
-                    let content = line;
-                    let isDone = false;
-                    if (line.startsWith('#')) {
-                        type = 'todo';
-                        content = line.substring(1).trim();
-                    }
-                    await addDoc(collection(db, `users/${user.value.uid}/notes`), {
-                        content: content,
-                        type: type,
-                        isDone: isDone,
-                        monthKey: currentMonthKey.value,
-                        createdAt: serverTimestamp()
-                    });
+
+                let type = 'text';
+                let content = rawText;
+                let isDone = false;
+                if (rawText.startsWith('#')) {
+                    type = 'todo';
+                    content = rawText.substring(1).trim();
                 }
+
+                await addDoc(collection(db, `users/${user.value.uid}/notes`), {
+                    content: content,
+                    type: type,
+                    isDone: isDone,
+                    monthKey: currentMonthKey.value,
+                    createdAt: serverTimestamp()
+                });
+
                 newNoteContent.value = '';
             };
 
@@ -2558,9 +2556,10 @@
                         if (amt > 0) { // STRICTLY positive only! Negatívak kizárva!
                             const noteDate = note.createdAt ? new Date(note.createdAt.toDate()) : new Date();
                             const monthNames = ['jan.', 'febr.', 'márc.', 'ápr.', 'máj.', 'jún.', 'júl.', 'aug.', 'szept.', 'okt.', 'nov.', 'dec.'];
+                            const singleLineContent = note.content.replace(/[\r\n]+/g, ' ').trim();
                             items.push({
                                 id: `note_${note.id}_${idx}`,
-                                name: note.content,
+                                name: singleLineContent,
                                 amount: amt,
                                 type: 'note',
                                 displayMonth: monthNames[noteDate.getMonth()],
