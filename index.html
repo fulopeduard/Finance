@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Money manager v22 | Napi Kerettel</title>
+    <title>Money manager v23 | Napi Kerettel</title>
 
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -72,7 +72,7 @@
             <div class="p-6 border-b border-slate-700/50">
                 <div class="flex items-center justify-between">
                     <h2 class="text-xl font-bold text-white">Money<span class="text-indigo-500"> manager</span></h2>
-                    <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-bold">v22</span>
+                    <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-bold">v23</span>
                 </div>
                 <p class="text-xs text-slate-500 mt-1">{{ user.email }}</p>
             </div>
@@ -108,7 +108,7 @@
         <div class="md:hidden fixed top-0 w-full glass z-50 p-4 flex justify-between items-center">
             <div class="flex items-center gap-2">
                 <span class="font-bold text-lg">Money manager</span>
-                <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-bold">v22</span>
+                <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-bold">v23</span>
             </div>
             <div class="flex gap-3 items-center">
                 <button @click="currentView = 'dashboard'" :class="currentView === 'dashboard' ? 'text-indigo-400' : 'text-slate-400'" title="Áttekintés"><i class="ph-bold ph-chart-pie-slice text-2xl"></i></button>
@@ -806,7 +806,12 @@
                                         </span>
                                     </div>
 
-                                    <div class="text-[10px] text-slate-500 mt-1">{{ note.displayDate }}</div>
+                                    <div class="flex items-center gap-2 text-[10px] text-slate-500 mt-1">
+                                        <span>{{ note.displayDate }}</span>
+                                        <span v-if="note.source === 'savings'" class="inline-flex items-center gap-1 text-[10px] bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 px-1.5 py-0.2 rounded font-medium">
+                                            <i class="ph-bold ph-vault text-[10px]"></i> Félretett pénz
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
 
@@ -824,7 +829,12 @@
                                     </span>
                                 </div>
 
-                                <div class="text-[10px] text-slate-500 mt-2">{{ note.displayDate }}</div>
+                                <div class="flex items-center gap-2 text-[10px] text-slate-500 mt-2">
+                                    <span>{{ note.displayDate }}</span>
+                                    <span v-if="note.source === 'savings'" class="inline-flex items-center gap-1 text-[10px] bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 px-1.5 py-0.2 rounded font-medium">
+                                        <i class="ph-bold ph-vault text-[10px]"></i> Félretett pénz
+                                    </span>
+                                </div>
                             </div>
                         </div>
 
@@ -1269,6 +1279,13 @@
                                                 <span :class="entry.type === 'withdrawal' ? 'text-rose-400' : 'text-emerald-400'">
                                                     {{ entry.type === 'withdrawal' ? 'Kivét' : 'Félretétel' }}
                                                 </span>
+                                                <span class="text-slate-600">•</span>
+                                                <span v-if="entry.affectBudget !== false" class="text-[10px] text-indigo-300 bg-indigo-500/15 border border-indigo-500/30 px-1.5 py-0.2 rounded font-medium flex items-center gap-1" title="A szabad keretben érvényesítve (Tervezés)">
+                                                    <i class="ph-bold ph-arrows-left-right text-[10px]"></i> Tervezésben
+                                                </span>
+                                                <span v-else class="text-[10px] text-slate-500 bg-slate-800 border border-slate-700 px-1.5 py-0.2 rounded font-medium">
+                                                    Független
+                                                </span>
                                             </div>
                                         </div>
                                     </div>
@@ -1453,6 +1470,52 @@
                             </div>
                         </div>
 
+                        <!-- V23: Két opció a szabad kerethez és tervezéshez -->
+                        <div class="space-y-2 pt-2 border-t border-slate-700/60">
+                            <label class="text-xs font-bold uppercase tracking-wider text-slate-300 block mb-1 flex items-center justify-between">
+                                <span>Költségvetési hatás (Szabad keret)</span>
+                                <span class="text-[10px] text-indigo-400 font-normal">Tervezés szinkronizáció</span>
+                            </label>
+                            
+                            <div class="space-y-2">
+                                <!-- 1. Opció: Levonás / Hozzáadás a szabad összegből (Alapértelmezetten bekapcsolva) -->
+                                <label class="flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition select-none"
+                                       :class="newSavingsEntry.affectBudget ? 'bg-indigo-600/20 border-indigo-500/70 text-white shadow-md shadow-indigo-500/10' : 'bg-slate-900/60 border-slate-700 text-slate-400 hover:border-slate-600'">
+                                    <input type="radio" :value="true" v-model="newSavingsEntry.affectBudget" class="accent-indigo-500 mt-1 shrink-0">
+                                    <div class="flex-1 min-w-0">
+                                        <span class="block font-bold text-xs sm:text-sm text-slate-100">
+                                            {{ newSavingsEntry.type === 'deposit' ? 'Pénzösszeg levonása a szabadon elkölthető összegből' : 'Pénzösszeg hozzáadása a szabadon elkölthető összeghez' }}
+                                        </span>
+                                        <p class="text-[11px] text-slate-400 mt-0.5 leading-relaxed">
+                                            Automatikusan bekerül a <strong>Tervezés</strong> felületre ({{ newSavingsEntry.type === 'deposit' ? 'kiadásként -' : 'bevételként +' }}{{ newSavingsEntry.amount || '...' }} RON), és módosítja a havi szabad keretet.
+                                        </p>
+                                        <!-- Opcionális al-opció teendőhöz -->
+                                        <div v-if="newSavingsEntry.affectBudget" class="mt-2 pt-2 border-t border-slate-700/40 flex items-center gap-2">
+                                            <input type="checkbox" id="newSavingsIsTodo" v-model="newSavingsEntry.isTodo" class="custom-checkbox shrink-0">
+                                            <label for="newSavingsIsTodo" class="text-[11px] text-indigo-200 cursor-pointer select-none flex items-center gap-1">
+                                                <span>Teendőként adja hozzá a tervezéshez (#)</span>
+                                                <span class="text-slate-400 font-normal italic">(csak kipipáláskor érvényesül)</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </label>
+
+                                <!-- 2. Opció: Ne érintse a szabad keretet (Független tétel) -->
+                                <label class="flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition select-none"
+                                       :class="!newSavingsEntry.affectBudget ? 'bg-indigo-600/20 border-indigo-500/70 text-white shadow-md shadow-indigo-500/10' : 'bg-slate-900/60 border-slate-700 text-slate-400 hover:border-slate-600'">
+                                    <input type="radio" :value="false" v-model="newSavingsEntry.affectBudget" class="accent-indigo-500 mt-1 shrink-0">
+                                    <div class="flex-1 min-w-0">
+                                        <span class="block font-bold text-xs sm:text-sm text-slate-100">
+                                            {{ newSavingsEntry.type === 'deposit' ? 'Ne vonja le a szabadon elkölthető összegből' : 'Ne adja hozzá a szabadon elkölthető összeghez' }}
+                                        </span>
+                                        <p class="text-[11px] text-slate-400 mt-0.5 leading-relaxed">
+                                            Független tétel: kizárólag a megtakarítás / vésztartalék egyenleget módosítja, a havi keretet és a Tervezést nem érinti.
+                                        </p>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+
                         <div class="flex justify-end gap-2 pt-3 border-t border-slate-700/60">
                             <button type="button" @click="showSavingsModal = false" class="px-4 py-2 rounded-xl text-slate-400 hover:text-white transition text-sm">Mégse</button>
                             <button type="submit" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-5 py-2 rounded-xl transition text-sm shadow-lg shadow-indigo-600/30">Mentés</button>
@@ -1515,6 +1578,49 @@
                             <label class="text-xs font-bold uppercase tracking-wider text-slate-300 block mb-1">Megjegyzés / Cél</label>
                             <input type="text" v-model="editingSavingsEntry.note"
                                    class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-white text-sm focus:outline-none focus:border-indigo-500" />
+                        </div>
+
+                        <!-- V23: Két opció a szabad kerethez és tervezéshez a szerkesztésben -->
+                        <div class="space-y-2 pt-2 border-t border-slate-700/60">
+                            <label class="text-xs font-bold uppercase tracking-wider text-slate-300 block mb-1 flex items-center justify-between">
+                                <span>Költségvetési hatás (Szabad keret)</span>
+                                <span class="text-[10px] text-indigo-400 font-normal">Tervezés szinkronizáció</span>
+                            </label>
+                            
+                            <div class="space-y-2">
+                                <label class="flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition select-none"
+                                       :class="editingSavingsEntry.affectBudget ? 'bg-indigo-600/20 border-indigo-500/70 text-white shadow-md shadow-indigo-500/10' : 'bg-slate-900/60 border-slate-700 text-slate-400 hover:border-slate-600'">
+                                    <input type="radio" :value="true" v-model="editingSavingsEntry.affectBudget" class="accent-indigo-500 mt-1 shrink-0">
+                                    <div class="flex-1 min-w-0">
+                                        <span class="block font-bold text-xs sm:text-sm text-slate-100">
+                                            {{ editingSavingsEntry.type === 'deposit' ? 'Pénzösszeg levonása a szabadon elkölthető összegből' : 'Pénzösszeg hozzáadása a szabadon elkölthető összeghez' }}
+                                        </span>
+                                        <p class="text-[11px] text-slate-400 mt-0.5 leading-relaxed">
+                                            Automatikusan frissíti a <strong>Tervezés</strong> felületen lévő bejegyzést ({{ editingSavingsEntry.type === 'deposit' ? 'kiadásként -' : 'bevételként +' }}{{ editingSavingsEntry.amount || '...' }} RON).
+                                        </p>
+                                        <div v-if="editingSavingsEntry.affectBudget" class="mt-2 pt-2 border-t border-slate-700/40 flex items-center gap-2">
+                                            <input type="checkbox" id="editSavingsIsTodo" v-model="editingSavingsEntry.isTodo" class="custom-checkbox shrink-0">
+                                            <label for="editSavingsIsTodo" class="text-[11px] text-indigo-200 cursor-pointer select-none flex items-center gap-1">
+                                                <span>Teendőként adja hozzá a tervezéshez (#)</span>
+                                                <span class="text-slate-400 font-normal italic">(csak kipipáláskor érvényesül)</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </label>
+
+                                <label class="flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition select-none"
+                                       :class="!editingSavingsEntry.affectBudget ? 'bg-indigo-600/20 border-indigo-500/70 text-white shadow-md shadow-indigo-500/10' : 'bg-slate-900/60 border-slate-700 text-slate-400 hover:border-slate-600'">
+                                    <input type="radio" :value="false" v-model="editingSavingsEntry.affectBudget" class="accent-indigo-500 mt-1 shrink-0">
+                                    <div class="flex-1 min-w-0">
+                                        <span class="block font-bold text-xs sm:text-sm text-slate-100">
+                                            {{ editingSavingsEntry.type === 'deposit' ? 'Ne vonja le a szabadon elkölthető összegből' : 'Ne adja hozzá a szabadon elkölthető összeghez' }}
+                                        </span>
+                                        <p class="text-[11px] text-slate-400 mt-0.5 leading-relaxed">
+                                            Független tétel: nem érinti a szabad keretet (ha volt kapcsolt tervezési jegyzet, törlésre kerül).
+                                        </p>
+                                    </div>
+                                </label>
+                            </div>
                         </div>
 
                         <div class="flex justify-end gap-2 pt-3 border-t border-slate-700/60">
@@ -3011,7 +3117,9 @@
                     amount: '',
                     type: 'deposit',
                     date: new Date().toISOString().split('T')[0],
-                    note: ''
+                    note: '',
+                    affectBudget: true,
+                    isTodo: false
                 };
                 showSavingsModal.value = true;
             };
@@ -3022,20 +3130,67 @@
                     return;
                 }
                 if (!user.value) return;
+
+                const amountNum = parseFloat(newSavingsEntry.value.amount);
+                const entryType = newSavingsEntry.value.type || 'deposit';
+                const entryDate = newSavingsEntry.value.date || new Date().toISOString().split('T')[0];
+                const entryNote = (newSavingsEntry.value.note || '').trim();
+                const affectBudget = newSavingsEntry.value.affectBudget !== false;
+                const isTodo = newSavingsEntry.value.isTodo === true;
+
                 try {
-                    await addDoc(collection(db, `users/${user.value.uid}/savings_entries`), {
-                        amount: parseFloat(newSavingsEntry.value.amount),
-                        type: newSavingsEntry.value.type || 'deposit',
-                        date: newSavingsEntry.value.date || new Date().toISOString().split('T')[0],
-                        note: (newSavingsEntry.value.note || '').trim(),
+                    let linkedNoteId = null;
+
+                    // V23: Ha a szabad keretből levonás / hozzáadás opció be van kapcsolva
+                    if (affectBudget) {
+                        const targetMonthKey = entryDate.substring(0, 7) || currentMonthKey.value;
+                        let noteContent = '';
+                        if (entryType === 'deposit') {
+                            noteContent = entryNote ? `Félretett pénz (${entryNote}): -${amountNum} RON` : `Félretett pénz: -${amountNum} RON`;
+                        } else {
+                            noteContent = entryNote ? `Kivét a félretett pénzből (${entryNote}): +${amountNum} RON` : `Kivét a félretett pénzből: +${amountNum} RON`;
+                        }
+
+                        const noteDocRef = await addDoc(collection(db, `users/${user.value.uid}/notes`), {
+                            content: noteContent,
+                            type: isTodo ? 'todo' : 'text',
+                            isDone: false,
+                            monthKey: targetMonthKey,
+                            source: 'savings',
+                            createdAt: serverTimestamp()
+                        });
+                        linkedNoteId = noteDocRef.id;
+                    }
+
+                    const entryDocRef = await addDoc(collection(db, `users/${user.value.uid}/savings_entries`), {
+                        amount: amountNum,
+                        type: entryType,
+                        date: entryDate,
+                        note: entryNote,
+                        affectBudget: affectBudget,
+                        isTodo: isTodo,
+                        linkedNoteId: linkedNoteId,
                         createdAt: serverTimestamp()
                     });
+
+                    if (linkedNoteId) {
+                        try {
+                            await updateDoc(doc(db, `users/${user.value.uid}/notes`, linkedNoteId), {
+                                savingsEntryId: entryDocRef.id
+                            });
+                        } catch (err) {
+                            console.warn("Nem sikerült elmenteni a savingsEntryId-t a jegyzetben:", err);
+                        }
+                    }
+
                     showSavingsModal.value = false;
                     newSavingsEntry.value = {
                         amount: '',
                         type: 'deposit',
                         date: new Date().toISOString().split('T')[0],
-                        note: ''
+                        note: '',
+                        affectBudget: true,
+                        isTodo: false
                     };
                 } catch (e) {
                     console.error("Hiba megtakarítás mentésekor:", e);
@@ -3050,7 +3205,10 @@
                     amount: entry.amount,
                     type: entry.type || 'deposit',
                     date: entry.date || new Date().toISOString().split('T')[0],
-                    note: entry.note || ''
+                    note: entry.note || '',
+                    affectBudget: entry.affectBudget !== false,
+                    isTodo: entry.isTodo === true,
+                    linkedNoteId: entry.linkedNoteId || null
                 };
                 showEditSavingsModal.value = true;
             };
@@ -3061,13 +3219,77 @@
                     return;
                 }
                 if (!user.value || !editingSavingsId.value) return;
+
+                const amountNum = parseFloat(editingSavingsEntry.value.amount);
+                const entryType = editingSavingsEntry.value.type || 'deposit';
+                const entryDate = editingSavingsEntry.value.date || new Date().toISOString().split('T')[0];
+                const entryNote = (editingSavingsEntry.value.note || '').trim();
+                const affectBudget = editingSavingsEntry.value.affectBudget !== false;
+                const isTodo = editingSavingsEntry.value.isTodo === true;
+                let linkedNoteId = editingSavingsEntry.value.linkedNoteId || null;
+
                 try {
+                    const targetMonthKey = entryDate.substring(0, 7) || currentMonthKey.value;
+                    let noteContent = '';
+                    if (entryType === 'deposit') {
+                        noteContent = entryNote ? `Félretett pénz (${entryNote}): -${amountNum} RON` : `Félretett pénz: -${amountNum} RON`;
+                    } else {
+                        noteContent = entryNote ? `Kivét a félretett pénzből (${entryNote}): +${amountNum} RON` : `Kivét a félretett pénzből: +${amountNum} RON`;
+                    }
+
+                    if (affectBudget) {
+                        if (linkedNoteId) {
+                            try {
+                                await updateDoc(doc(db, `users/${user.value.uid}/notes`, linkedNoteId), {
+                                    content: noteContent,
+                                    type: isTodo ? 'todo' : 'text',
+                                    monthKey: targetMonthKey
+                                });
+                            } catch (err) {
+                                const newNoteRef = await addDoc(collection(db, `users/${user.value.uid}/notes`), {
+                                    content: noteContent,
+                                    type: isTodo ? 'todo' : 'text',
+                                    isDone: false,
+                                    monthKey: targetMonthKey,
+                                    source: 'savings',
+                                    savingsEntryId: editingSavingsId.value,
+                                    createdAt: serverTimestamp()
+                                });
+                                linkedNoteId = newNoteRef.id;
+                            }
+                        } else {
+                            const newNoteRef = await addDoc(collection(db, `users/${user.value.uid}/notes`), {
+                                content: noteContent,
+                                type: isTodo ? 'todo' : 'text',
+                                isDone: false,
+                                monthKey: targetMonthKey,
+                                source: 'savings',
+                                savingsEntryId: editingSavingsId.value,
+                                createdAt: serverTimestamp()
+                            });
+                            linkedNoteId = newNoteRef.id;
+                        }
+                    } else {
+                        if (linkedNoteId) {
+                            try {
+                                await deleteDoc(doc(db, `users/${user.value.uid}/notes`, linkedNoteId));
+                            } catch (err) {
+                                console.warn("Nem sikerült törölni a lecsatolt jegyzetet:", err);
+                            }
+                            linkedNoteId = null;
+                        }
+                    }
+
                     await updateDoc(doc(db, `users/${user.value.uid}/savings_entries`, editingSavingsId.value), {
-                        amount: parseFloat(editingSavingsEntry.value.amount),
-                        type: editingSavingsEntry.value.type || 'deposit',
-                        date: editingSavingsEntry.value.date || new Date().toISOString().split('T')[0],
-                        note: (editingSavingsEntry.value.note || '').trim()
+                        amount: amountNum,
+                        type: entryType,
+                        date: entryDate,
+                        note: entryNote,
+                        affectBudget: affectBudget,
+                        isTodo: isTodo,
+                        linkedNoteId: linkedNoteId
                     });
+
                     showEditSavingsModal.value = false;
                     editingSavingsId.value = null;
                 } catch (e) {
@@ -3080,6 +3302,14 @@
                 if (!confirm('Biztosan törölni szeretnéd ezt a tételt?')) return;
                 if (!user.value) return;
                 try {
+                    const entry = savingsEntries.value.find(e => e.id === id);
+                    if (entry && entry.linkedNoteId) {
+                        try {
+                            await deleteDoc(doc(db, `users/${user.value.uid}/notes`, entry.linkedNoteId));
+                        } catch (err) {
+                            console.warn("Nem sikerült törölni a kapcsolt jegyzetet:", err);
+                        }
+                    }
                     await deleteDoc(doc(db, `users/${user.value.uid}/savings_entries`, id));
                 } catch (e) {
                     console.error("Hiba törléskor:", e);
@@ -3087,7 +3317,7 @@
                 }
             };
 
-            const saveEmergencySettings = async () => {
+            const saveEmergencySettings = asyncconst saveEmergencySettings = async () => {
                 if (!user.value) return;
                 try {
                     await setDoc(doc(db, `users/${user.value.uid}/savings_settings/config`), {
