@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Money manager v24 | Napi Kerettel</title>
+    <title>Money manager v29 | Napi Kerettel</title>
 
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -72,7 +72,7 @@
             <div class="p-6 border-b border-slate-700/50">
                 <div class="flex items-center justify-between">
                     <h2 class="text-xl font-bold text-white">Money<span class="text-indigo-500"> manager</span></h2>
-                    <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-bold">v24</span>
+                    <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-bold">v29</span>
                 </div>
                 <p class="text-xs text-slate-500 mt-1">{{ user.email }}</p>
             </div>
@@ -108,7 +108,7 @@
         <div class="md:hidden fixed top-0 w-full glass z-50 p-4 flex justify-between items-center">
             <div class="flex items-center gap-2">
                 <span class="font-bold text-lg">Money manager</span>
-                <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-bold">v24</span>
+                <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-bold">v29</span>
             </div>
             <div class="flex gap-3 items-center">
                 <button @click="currentView = 'dashboard'" :class="currentView === 'dashboard' ? 'text-indigo-400' : 'text-slate-400'" title="Áttekintés"><i class="ph-bold ph-chart-pie-slice text-2xl"></i></button>
@@ -811,6 +811,9 @@
                                         <span v-if="note.source === 'savings'" class="inline-flex items-center gap-1 text-[10px] bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 px-1.5 py-0.2 rounded font-medium">
                                             <i class="ph-bold ph-vault text-[10px]"></i> Félretett pénz
                                         </span>
+                                        <span v-else-if="note.source === 'shared_payment'" class="inline-flex items-center gap-1 text-[10px] bg-sky-500/15 text-sky-300 border border-sky-500/30 px-1.5 py-0.2 rounded font-medium">
+                                            <i class="ph-bold ph-users text-[10px]"></i> Megosztott pénzügyek
+                                        </span>
                                     </div>
                                 </div>
                             </div>
@@ -834,6 +837,9 @@
                                     <span v-if="note.source === 'savings'" class="inline-flex items-center gap-1 text-[10px] bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 px-1.5 py-0.2 rounded font-medium">
                                         <i class="ph-bold ph-vault text-[10px]"></i> Félretett pénz
                                     </span>
+                                    <span v-else-if="note.source === 'shared_payment'" class="inline-flex items-center gap-1 text-[10px] bg-sky-500/15 text-sky-300 border border-sky-500/30 px-1.5 py-0.2 rounded font-medium">
+                                        <i class="ph-bold ph-users text-[10px]"></i> Megosztott pénzügyek
+                                    </span>
                                 </div>
                             </div>
                         </div>
@@ -846,142 +852,446 @@
                 </div> <!-- End planning view -->
 
                 <div v-if="currentView === 'shared'" class="space-y-6 animate-fade-in">
-                    <h2 class="text-2xl font-bold text-white flex items-center gap-2 mb-6">
-                        <i class="ph-duotone ph-users"></i> Megosztott pénzügyek
-                    </h2>
-                    
-                    <div class="glass p-6 rounded-xl relative overflow-hidden">
-                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-                            <h3 class="text-lg font-bold text-white flex items-center gap-2 text-indigo-400">
-                                <i class="ph-duotone ph-hand-coins"></i> Új kölcsön / Megosztás
-                            </h3>
-                            <button @click="showJoinModal = true" class="bg-indigo-600/20 hover:bg-indigo-600/40 text-indigo-300 border border-indigo-500/30 px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition">
-                                <i class="ph-bold ph-link"></i> Csatlakozás kód alapján
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-2">
+                        <h2 class="text-2xl font-bold text-white flex items-center gap-2">
+                            <i class="ph-duotone ph-users"></i> Megosztott pénzügyek
+                        </h2>
+                        
+                        <!-- V27: Alfülek választó (Aktív vs Előzmények & Töröltek) -->
+                        <div class="flex items-center gap-2 bg-slate-900/80 p-1 rounded-xl border border-slate-800">
+                            <button @click="sharedSubTab = 'active'; setTimeout(updateSharedChart, 50);" 
+                                    :class="sharedSubTab === 'active' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' : 'text-slate-400 hover:text-white'" 
+                                    class="px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 transition">
+                                <i class="ph-bold ph-hand-coins"></i> Aktív tételek
+                                <span class="bg-slate-950/60 px-2 py-0.5 rounded-full text-[11px] font-mono text-slate-300">{{ activeShared.length }}</span>
+                            </button>
+                            <button @click="sharedSubTab = 'history'" 
+                                    :class="sharedSubTab === 'history' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' : 'text-slate-400 hover:text-white'" 
+                                    class="px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 transition">
+                                <i class="ph-bold ph-clock-counter-clockwise text-indigo-300"></i> Előzmények (History)
+                                <span v-if="sharedHistoryList.length > 0" class="bg-indigo-500/30 text-indigo-300 px-2 py-0.5 rounded-full text-[11px] font-mono font-bold">{{ sharedHistoryList.length }}</span>
                             </button>
                         </div>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label class="text-[10px] uppercase text-slate-500 font-bold">Kinek / Megnevezés</label>
-                                <input v-model="newShared.name" placeholder="pl. Laptop, Telefon" class="glass-input w-full p-2 rounded text-sm mt-1">
-                            </div>
-                            <div>
-                                <label class="text-[10px] uppercase text-slate-500 font-bold">Teljes összeg</label>
-                                <input v-model.number="newShared.amount" type="number" placeholder="RON" class="glass-input w-full p-2 rounded text-sm mt-1">
-                            </div>
-                            <div class="col-span-1 md:col-span-2 mb-1">
-                                <label class="text-[10px] uppercase text-slate-500 font-bold block mb-2">Megadás módja</label>
-                                <div class="flex gap-4">
-                                    <label class="flex items-center gap-2 text-sm text-slate-300 cursor-pointer">
-                                        <input type="radio" v-model="newShared.inputMode" value="months" class="accent-indigo-500"> Részletek száma
-                                    </label>
-                                    <label class="flex items-center gap-2 text-sm text-slate-300 cursor-pointer">
-                                        <input type="radio" v-model="newShared.inputMode" value="monthlyAmount" class="accent-indigo-500"> Havi összeg
-                                    </label>
-                                </div>
-                            </div>
-                            <div v-if="newShared.inputMode === 'months'">
-                                <label class="text-[10px] uppercase text-slate-500 font-bold">Hány részletben?</label>
-                                <input v-model.number="newShared.months" type="number" placeholder="pl. 3" class="glass-input w-full p-2 rounded text-sm mt-1">
-                            </div>
-                            <div v-else>
-                                <label class="text-[10px] uppercase text-slate-500 font-bold">Havi összeg (RON)</label>
-                                <input v-model.number="newShared.monthlyAmount" type="number" placeholder="pl. 250" class="glass-input w-full p-2 rounded text-sm mt-1">
-                            </div>
-                            <div>
-                                <label class="text-[10px] uppercase text-slate-500 font-bold">Melyik napon általában?</label>
-                                <input v-model.number="newShared.defaultDay" type="number" min="1" max="31" placeholder="pl. 10" class="glass-input w-full p-2 rounded text-sm mt-1">
-                            </div>
-                        </div>
-                        <button @click="addShared" class="w-full md:w-auto mt-4 bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 px-6 rounded-lg transition">
-                            Hozzáadás
-                        </button>
                     </div>
 
-                    <div class="grid grid-cols-1 gap-6">
-                        <div v-for="shared in activeShared" :key="shared.id" class="glass p-5 rounded-xl border-l-4 border-indigo-500 relative group flex flex-col">
-                            <div class="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition">
-                                <button @click="copyShareCode(shared)" title="Megosztási kód másolása" class="text-slate-600 hover:text-emerald-400 bg-slate-900 rounded p-1.5 shadow transition">
-                                    <i class="ph-bold ph-share-network"></i>
-                                </button>
-                                <button v-if="shared.isOwner" @click="openEditShared(shared)" class="text-slate-600 hover:text-indigo-400 bg-slate-900 rounded p-1.5 shadow transition">
-                                    <i class="ph-bold ph-pencil-simple"></i>
-                                </button>
-                                <button @click="deleteShared(shared.id, shared.isOwner)" class="text-slate-600 hover:text-red-400 bg-slate-900 rounded p-1.5 shadow transition">
-                                    <i class="ph-bold ph-trash"></i>
+                    <!-- ==================== SUB-TAB 1: AKTÍV MEGOSZTOTT PÉNZÜGYEK ==================== -->
+                    <div v-show="sharedSubTab === 'active'" class="space-y-6">
+                        <div class="glass p-6 rounded-xl relative overflow-hidden">
+                            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+                                <h3 class="text-lg font-bold text-white flex items-center gap-2 text-indigo-400">
+                                    <i class="ph-duotone ph-hand-coins"></i> Új kölcsön / Megosztás
+                                </h3>
+                                <button @click="showJoinModal = true" class="bg-indigo-600/20 hover:bg-indigo-600/40 text-indigo-300 border border-indigo-500/30 px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition">
+                                    <i class="ph-bold ph-link"></i> Csatlakozás kód alapján
                                 </button>
                             </div>
-                            <div class="flex justify-between items-start mb-4">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
-                                    <h4 class="text-xl font-bold text-white">{{ shared.name }}</h4>
-                                    <p class="text-sm text-slate-400 mb-1">Teljes: {{ formatCurrency(shared.totalAmount) }} • Tervezett: {{ shared.dynamicTotalMonths }} részlet (Havi {{ formatCurrency(shared.originalMonthly) }})</p>
-                                    <p v-if="shared.remainingAmount > 0" class="text-xs text-indigo-400 font-bold bg-indigo-500/10 inline-block px-2 py-1 rounded border border-indigo-500/20">
-                                        <i class="ph-bold ph-clock"></i> Következő esedékes: hónap {{ shared.defaultDay }}. napján ({{ shared.daysUntilNext === 0 ? 'Ma!' : shared.daysUntilNext + ' nap múlva' }})
-                                    </p>
+                                    <label class="text-[10px] uppercase text-slate-500 font-bold">Kinek / Megnevezés</label>
+                                    <input v-model="newShared.name" placeholder="pl. Laptop, Telefon" class="glass-input w-full p-2 rounded text-sm mt-1">
                                 </div>
-                                <div class="text-right">
-                                    <p class="text-xs text-slate-500 uppercase font-bold">Hátralék</p>
-                                    <p class="text-xl font-bold text-indigo-400">{{ formatCurrency(shared.remainingAmount) }}</p>
+                                <div>
+                                    <label class="text-[10px] uppercase text-slate-500 font-bold">Teljes összeg</label>
+                                    <input v-model.number="newShared.amount" type="number" placeholder="RON" class="glass-input w-full p-2 rounded text-sm mt-1">
+                                </div>
+                                <div class="col-span-1 md:col-span-2 mb-1">
+                                    <label class="text-[10px] uppercase text-slate-500 font-bold block mb-2">Megadás módja</label>
+                                    <div class="flex gap-4">
+                                        <label class="flex items-center gap-2 text-sm text-slate-300 cursor-pointer">
+                                            <input type="radio" v-model="newShared.inputMode" value="months" class="accent-indigo-500"> Részletek száma
+                                        </label>
+                                        <label class="flex items-center gap-2 text-sm text-slate-300 cursor-pointer">
+                                            <input type="radio" v-model="newShared.inputMode" value="monthlyAmount" class="accent-indigo-500"> Havi összeg
+                                        </label>
+                                    </div>
+                                </div>
+                                <div v-if="newShared.inputMode === 'months'">
+                                    <label class="text-[10px] uppercase text-slate-500 font-bold">Hány részletben?</label>
+                                    <input v-model.number="newShared.months" type="number" placeholder="pl. 3" class="glass-input w-full p-2 rounded text-sm mt-1">
+                                </div>
+                                <div v-else>
+                                    <label class="text-[10px] uppercase text-slate-500 font-bold">Havi összeg (RON)</label>
+                                    <input v-model.number="newShared.monthlyAmount" type="number" placeholder="pl. 250" class="glass-input w-full p-2 rounded text-sm mt-1">
+                                </div>
+                                <div>
+                                    <label class="text-[10px] uppercase text-slate-500 font-bold">Melyik napon általában?</label>
+                                    <input v-model.number="newShared.defaultDay" type="number" min="1" max="31" placeholder="pl. 10" class="glass-input w-full p-2 rounded text-sm mt-1">
                                 </div>
                             </div>
-                            
-                            <div class="w-full bg-slate-700 h-2 rounded-full overflow-hidden mb-4 hidden">
-                                <!-- Régi progress bar elrejtve, helyette a grafikon lesz -->
-                                <div class="h-full bg-indigo-500 transition-all duration-500" :style="{ width: ((shared.totalAmount - shared.remainingAmount) / shared.totalAmount * 100) + '%' }"></div>
-                            </div>
-                            
-                            <!-- Dinamikus egyéni grafikon -->
-                            <div class="h-40 w-full mb-4 relative bg-slate-900/30 rounded-lg p-2 border border-slate-700/50">
-                                <canvas :id="'sharedChart-' + shared.id"></canvas>
-                            </div>
-                            
-                            <div class="bg-slate-800/50 p-4 rounded-lg">
-                                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-2 gap-2">
-                                    <h5 class="text-sm font-bold text-slate-300">Részletek ({{ shared.paidCount }} db befizetve, még kb. {{ shared.remainingMonthsCount }} db maradt)</h5>
-                                    <div v-if="shared.remainingAmount > 0" class="flex flex-col gap-2 mt-2 sm:mt-0">
-                                        <div class="flex items-center gap-2">
-                                            <input v-model.number="shared.customPayment" type="number" :placeholder="shared.monthlyAmount" class="glass-input w-20 sm:w-24 px-2 py-1.5 rounded text-xs">
-                                            <input v-model="shared.customComment" type="text" placeholder="Megjegyzés (opc.)" class="glass-input w-32 sm:w-40 px-2 py-1.5 rounded text-xs" @keyup.enter="addSharedPayment(shared, shared.customPayment, shared.customComment)">
-                                            <button @click="addSharedPayment(shared, shared.customPayment, shared.customComment)" class="bg-emerald-600/20 hover:bg-emerald-600/40 text-emerald-400 border border-emerald-500/30 px-3 py-1.5 rounded text-xs font-bold transition whitespace-nowrap">
-                                                + Befizetés
+                            <button @click="addShared" class="w-full md:w-auto mt-4 bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 px-6 rounded-lg transition">
+                                Hozzáadás
+                            </button>
+                        </div>
+
+                        <div class="grid grid-cols-1 gap-6">
+                            <div v-for="shared in activeShared" :key="shared.id" class="glass p-5 rounded-xl border-l-4 border-indigo-500 relative group flex flex-col">
+                                <!-- V28: Gombok a jobb felső sarokban z-10 indexszel -->
+                                <div class="absolute top-4 right-4 flex gap-2 opacity-60 hover:opacity-100 sm:opacity-0 group-hover:opacity-100 transition z-10">
+                                    <button @click="copyShareCode(shared)" title="Megosztási kód másolása" class="text-slate-400 hover:text-emerald-400 bg-slate-900/90 hover:bg-slate-800 rounded p-1.5 shadow transition border border-slate-700/50">
+                                        <i class="ph-bold ph-share-network"></i>
+                                    </button>
+                                    <button v-if="shared.isOwner" @click="openEditShared(shared)" title="Szerkesztés" class="text-slate-400 hover:text-indigo-400 bg-slate-900/90 hover:bg-slate-800 rounded p-1.5 shadow transition border border-slate-700/50">
+                                        <i class="ph-bold ph-pencil-simple"></i>
+                                    </button>
+                                    <!-- Megosztott pénzügy törlése kötelező indoklásos modállal -->
+                                    <button @click="confirmDeleteShared(shared)" title="Megosztott pénzügy törlése" class="text-slate-400 hover:text-red-400 bg-slate-900/90 hover:bg-slate-800 rounded p-1.5 shadow transition border border-slate-700/50">
+                                        <i class="ph-bold ph-trash"></i>
+                                    </button>
+                                </div>
+                                <div class="flex justify-between items-start mb-4 gap-4">
+                                    <div class="flex-1 min-w-0">
+                                        <h4 class="text-xl font-bold text-white truncate">{{ shared.name }}</h4>
+                                        <p class="text-sm text-slate-400 mb-1">Teljes: {{ formatCurrency(shared.totalAmount) }} • Tervezett: {{ shared.dynamicTotalMonths }} részlet (Havi {{ formatCurrency(shared.originalMonthly) }})</p>
+                                        <p v-if="shared.remainingAmount > 0" class="text-xs text-indigo-400 font-bold bg-indigo-500/10 inline-block px-2 py-1 rounded border border-indigo-500/20">
+                                            <i class="ph-bold ph-clock"></i> Következő esedékes: hónap {{ shared.defaultDay }}. napján ({{ shared.daysUntilNext === 0 ? 'Ma!' : shared.daysUntilNext + ' nap múlva' }})
+                                        </p>
+                                    </div>
+                                    <!-- V28: Hátralék lenyomva (pt-8 sm:pt-9), hogy a műveleti gombok ne takarják el -->
+                                    <div class="text-right pt-8 sm:pt-9 shrink-0">
+                                        <p class="text-xs text-slate-500 uppercase font-bold tracking-wider">Hátralék</p>
+                                        <p class="text-xl font-bold text-indigo-400 font-mono">{{ formatCurrency(shared.remainingAmount) }}</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="w-full bg-slate-700 h-2 rounded-full overflow-hidden mb-4 hidden">
+                                    <div class="h-full bg-indigo-500 transition-all duration-500" :style="{ width: ((shared.totalAmount - shared.remainingAmount) / shared.totalAmount * 100) + '%' }"></div>
+                                </div>
+                                
+                                <!-- Dinamikus egyéni grafikon -->
+                                <div class="h-40 w-full mb-4 relative bg-slate-900/30 rounded-lg p-2 border border-slate-700/50">
+                                    <canvas :id="'sharedChart-' + shared.id"></canvas>
+                                </div>
+
+                                <div class="mt-auto border-t border-slate-700 pt-3">
+                                    <!-- V26: Személyes, azonnal reaktív költségvetési hatás választó -->
+                                    <div class="mb-3 bg-slate-900/50 p-2.5 rounded-lg border border-slate-800">
+                                        <div class="flex items-center justify-between text-xs text-slate-400 mb-1.5">
+                                            <span class="font-semibold text-slate-300 flex items-center gap-1">
+                                                <i class="ph-bold ph-sliders text-indigo-400"></i> Hatása a szabad keretedre (csak neked):
+                                            </span>
+                                            <span class="text-[11px] font-mono" :class="getSharedImpact(shared.id) === 'add' ? 'text-emerald-400' : (getSharedImpact(shared.id) === 'neutral' ? 'text-slate-400' : 'text-rose-400')">
+                                                {{ getSharedImpact(shared.id) === 'add' ? '+ Hozzáadás' : (getSharedImpact(shared.id) === 'neutral' ? 'Semleges' : '- Levonás') }}
+                                            </span>
+                                        </div>
+                                        <div class="grid grid-cols-3 gap-1.5">
+                                            <button type="button" @click="setSharedImpact(shared.id, 'subtract')"
+                                                    :class="getSharedImpact(shared.id) === 'subtract' ? 'bg-rose-500/25 text-rose-300 border-rose-500 font-bold shadow' : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-slate-200'"
+                                                    class="py-1 px-1.5 rounded text-[11px] border transition flex items-center justify-center gap-1 cursor-pointer">
+                                                <i class="ph-bold ph-minus-circle"></i> Levonás (-)
+                                            </button>
+                                            <button type="button" @click="setSharedImpact(shared.id, 'add')"
+                                                    :class="getSharedImpact(shared.id) === 'add' ? 'bg-emerald-500/25 text-emerald-300 border-emerald-500 font-bold shadow' : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-slate-200'"
+                                                    class="py-1 px-1.5 rounded text-[11px] border transition flex items-center justify-center gap-1 cursor-pointer">
+                                                <i class="ph-bold ph-plus-circle"></i> Hozzáadás (+)
+                                            </button>
+                                            <button type="button" @click="setSharedImpact(shared.id, 'neutral')"
+                                                    :class="getSharedImpact(shared.id) === 'neutral' ? 'bg-indigo-500/25 text-indigo-300 border-indigo-500 font-bold shadow' : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-slate-200'"
+                                                    class="py-1 px-1.5 rounded text-[11px] border transition flex items-center justify-center gap-1 cursor-pointer">
+                                                <i class="ph-bold ph-equals"></i> Semleges
                                             </button>
                                         </div>
                                     </div>
-                                </div>
-                                <div class="space-y-1 mt-2">
-                                    <div v-for="payment in shared.payments" :key="payment.id" class="flex flex-col py-1.5 border-b border-slate-700/50 last:border-0 group/payment">
-                                        <div class="flex justify-between items-center text-xs text-slate-400">
-                                            <div>
-                                                <span>
-                                                    {{ payment.date ? new Date(payment.date.toDate()).toLocaleString('hu-HU', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : 'Most' }}
-                                                    <span v-if="payment.payerEmail" class="text-indigo-400 ml-1 font-semibold">({{ payment.payerEmail.split('@')[0] }})</span>
-                                                </span>
-                                                <span v-if="payment.editedAt" class="text-[10px] text-slate-500 ml-1">(Szerk: {{ new Date(payment.editedAt.toDate()).toLocaleTimeString('hu-HU', { hour: '2-digit', minute: '2-digit' }) }})</span>
-                                            </div>
+
+                                    <div class="flex flex-col gap-2">
+                                        <div class="flex gap-2">
+                                            <input v-model.number="shared.customPayment" type="number" :placeholder="'Összeg (alap: ' + formatCurrency(shared.monthlyAmount) + ')'" class="glass-input w-1/2 p-2 rounded text-xs">
+                                            <input v-model="shared.customComment" type="text" placeholder="Megjegyzés (pl. Március)" class="glass-input w-1/2 p-2 rounded text-xs">
+                                        </div>
+                                        <div class="flex justify-between items-center gap-2">
+                                            <span class="text-xs font-bold text-slate-400">Részletek ({{ shared.paidCount }}/{{ shared.dynamicTotalMonths }})</span>
                                             
-                                            <div v-if="editingPaymentId === payment.id" class="flex items-center gap-2">
-                                                <input v-model.number="editingPaymentAmount" type="number" class="glass-input w-16 px-2 py-1 rounded text-xs text-right" @keyup.enter="savePaymentEdit(shared.id, payment.id)">
-                                                <input v-model="editingPaymentComment" type="text" class="glass-input w-24 px-2 py-1 rounded text-xs" placeholder="Megj." @keyup.enter="savePaymentEdit(shared.id, payment.id)">
-                                                <button @click="savePaymentEdit(shared.id, payment.id)" class="text-emerald-400 hover:text-emerald-300 bg-slate-900 rounded p-1 shadow"><i class="ph-bold ph-check"></i></button>
-                                                <button @click="cancelPaymentEdit()" class="text-slate-400 hover:text-slate-200 bg-slate-900 rounded p-1 shadow"><i class="ph-bold ph-x"></i></button>
-                                            </div>
-                                            
-                                            <div v-else class="flex items-center gap-3">
-                                                <span class="text-emerald-400 font-bold">+{{ formatCurrency(payment.amount) }}</span>
-                                                <div class="opacity-0 group-hover/payment:opacity-100 flex gap-2 transition">
-                                                    <button @click="startPaymentEdit(shared.id, payment)" class="text-slate-500 hover:text-indigo-400"><i class="ph-bold ph-pencil-simple"></i></button>
-                                                    <button @click="deleteSharedPayment(shared.id, payment.id)" class="text-slate-500 hover:text-red-400"><i class="ph-bold ph-trash"></i></button>
+                                            <button @click="addSharedPayment(shared, shared.customPayment, shared.customComment, getSharedImpact(shared.id))" 
+                                                    :class="getSharedImpact(shared.id) === 'add' ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/30' : (getSharedImpact(shared.id) === 'neutral' ? 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-600/30' : 'bg-rose-600 hover:bg-rose-500 text-white shadow-rose-600/30')"
+                                                    class="px-3 py-1.5 rounded text-xs font-bold transition whitespace-nowrap shadow flex items-center gap-1">
+                                                <i class="ph-bold ph-plus"></i>
+                                                <span>Befizetés</span>
+                                                <span class="text-[10px] opacity-90">({{ getSharedImpact(shared.id) === 'add' ? '+ keret' : (getSharedImpact(shared.id) === 'neutral' ? '0 semleges' : '- keret') }})</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="space-y-1 mt-2">
+                                        <div v-for="payment in shared.payments" :key="payment.id" class="flex flex-col py-1.5 border-b border-slate-700/50 last:border-0 group/payment">
+                                            <div class="flex justify-between items-center text-xs text-slate-400">
+                                                <div>
+                                                    <span>
+                                                        {{ payment.date ? new Date(payment.date.toDate()).toLocaleString('hu-HU', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : 'Most' }}
+                                                        <span v-if="payment.payerEmail" class="text-indigo-400 ml-1 font-semibold">({{ payment.payerEmail.split('@')[0] }})</span>
+                                                        
+                                                        <!-- V26: Költségvetési hatás (Saját hatás vs Partner fizetése) -->
+                                                        <template v-if="user && (payment.payerUid === user.uid || payment.payerEmail === user.email)">
+                                                            <span v-if="payment.budgetImpact === 'add'" class="text-[10px] text-emerald-300 bg-emerald-500/15 border border-emerald-500/30 px-1.5 py-0.2 rounded font-medium inline-flex items-center gap-0.5 ml-1.5" title="Saját kerethez adva (+)">
+                                                                <i class="ph-bold ph-plus-circle text-[10px]"></i> +Keret
+                                                            </span>
+                                                            <span v-else-if="payment.budgetImpact === 'subtract'" class="text-[10px] text-rose-300 bg-rose-500/15 border border-rose-500/30 px-1.5 py-0.2 rounded font-medium inline-flex items-center gap-0.5 ml-1.5" title="Saját keretből levonva (-)">
+                                                                <i class="ph-bold ph-minus-circle text-[10px]"></i> -Keret
+                                                            </span>
+                                                            <span v-else class="text-[10px] text-slate-400 bg-slate-800 border border-slate-700 px-1.5 py-0.2 rounded font-medium inline-flex items-center gap-0.5 ml-1.5" title="Semleges tétel">
+                                                                Semleges
+                                                            </span>
+                                                        </template>
+                                                        <template v-else>
+                                                            <span class="text-[10px] text-slate-400 bg-slate-800/80 border border-slate-700 px-1.5 py-0.2 rounded font-medium inline-flex items-center gap-0.5 ml-1.5" title="Partner által rögzített befizetés (nem érinti a te szabad keretedet)">
+                                                                <i class="ph-bold ph-user text-[10px]"></i> Partner
+                                                            </span>
+                                                        </template>
+                                                    </span>
+                                                    <span v-if="payment.editedAt" class="text-[10px] text-slate-500 ml-1">(Szerk: {{ new Date(payment.editedAt.toDate()).toLocaleTimeString('hu-HU', { hour: '2-digit', minute: '2-digit' }) }})</span>
+                                                </div>
+                                                
+                                                <div v-if="editingPaymentId === payment.id" class="flex items-center gap-2">
+                                                    <input v-model.number="editingPaymentAmount" type="number" class="glass-input w-16 px-2 py-1 rounded text-xs text-right" @keyup.enter="savePaymentEdit(shared.id, payment.id)">
+                                                    <input v-model="editingPaymentComment" type="text" class="glass-input w-24 px-2 py-1 rounded text-xs" placeholder="Megj." @keyup.enter="savePaymentEdit(shared.id, payment.id)">
+                                                    <button @click="savePaymentEdit(shared.id, payment.id)" class="text-emerald-400 hover:text-emerald-300 bg-slate-900 rounded p-1 shadow"><i class="ph-bold ph-check"></i></button>
+                                                    <button @click="cancelPaymentEdit()" class="text-slate-400 hover:text-slate-200 bg-slate-900 rounded p-1 shadow"><i class="ph-bold ph-x"></i></button>
+                                                </div>
+                                                
+                                                <div v-else class="flex items-center gap-3">
+                                                    <span class="text-emerald-400 font-bold">+{{ formatCurrency(payment.amount) }}</span>
+                                                    <div class="opacity-0 group-hover/payment:opacity-100 flex gap-2 transition">
+                                                        <button @click="startPaymentEdit(shared.id, payment)" class="text-slate-500 hover:text-indigo-400"><i class="ph-bold ph-pencil-simple"></i></button>
+                                                        <!-- V27: Részletfizetés törlése kötelező indoklásos modállal -->
+                                                        <button @click="confirmDeletePayment(shared, payment)" title="Befizetés törlése" class="text-slate-500 hover:text-red-400"><i class="ph-bold ph-trash"></i></button>
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                        <div v-if="payment.comment && editingPaymentId !== payment.id" class="text-[11px] text-slate-300 mt-0.5 pl-1 italic">
-                                            {{ payment.comment }}
+                                            <div v-if="payment.comment && editingPaymentId !== payment.id" class="text-[11px] text-slate-300 mt-0.5 pl-1 italic">
+                                                {{ payment.comment }}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
+                            <div v-if="activeShared.length === 0" class="text-center py-10 border border-dashed border-slate-700 rounded-lg">
+                                <p class="text-slate-500 text-sm">Nincsenek aktív megosztott pénzügyek.</p>
+                            </div>
                         </div>
-                        <div v-if="activeShared.length === 0" class="text-center py-10 border border-dashed border-slate-700 rounded-lg">
-                            <p class="text-slate-500 text-sm">Nincsenek aktív megosztott pénzügyek.</p>
+                    </div>
+
+                    <!-- ==================== SUB-TAB 2: V27 ELŐZMÉNYEK (HISTORY) & TÖRÖLTEK ==================== -->
+                    <div v-show="sharedSubTab === 'history'" class="space-y-6">
+                        <!-- Statisztikai kártyák -->
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div class="glass p-4 rounded-xl border border-indigo-500/20">
+                                <p class="text-xs text-slate-400 font-bold uppercase tracking-wider">Összes esemény a naplóban</p>
+                                <p class="text-2xl font-extrabold text-white mt-1">{{ sharedHistoryList.length }} <span class="text-sm font-normal text-slate-400">bejegyzés</span></p>
+                            </div>
+                            <div class="glass p-4 rounded-xl border border-rose-500/20">
+                                <p class="text-xs text-rose-400 font-bold uppercase tracking-wider">Törölt pénzügyek</p>
+                                <p class="text-2xl font-extrabold text-rose-400 mt-1">{{ deletedSharedCount }} <span class="text-sm font-normal text-rose-300/70">tétel</span></p>
+                            </div>
+                            <div class="glass p-4 rounded-xl border border-emerald-500/20">
+                                <p class="text-xs text-emerald-400 font-bold uppercase tracking-wider">Helyreállított tételek</p>
+                                <p class="text-2xl font-extrabold text-emerald-400 mt-1">{{ restoredSharedCount }} <span class="text-sm font-normal text-emerald-300/70">tétel</span></p>
+                            </div>
+                        </div>
+
+                        <!-- Szűrősáv -->
+                        <div class="flex flex-wrap items-center justify-between gap-3 bg-slate-900/70 p-3 rounded-xl border border-slate-800">
+                            <div class="flex flex-wrap items-center gap-2">
+                                <button @click="historyFilter = 'all'" 
+                                        :class="historyFilter === 'all' ? 'bg-indigo-600 text-white shadow' : 'bg-slate-800 text-slate-400 hover:text-slate-200'" 
+                                        class="px-3 py-1.5 rounded-lg text-xs font-bold transition">
+                                    Mind ({{ sharedHistoryList.length }})
+                                </button>
+                                <button @click="historyFilter = 'deleted_items'" 
+                                        :class="historyFilter === 'deleted_items' ? 'bg-rose-600 text-white shadow' : 'bg-slate-800 text-slate-400 hover:text-slate-200'" 
+                                        class="px-3 py-1.5 rounded-lg text-xs font-bold transition">
+                                    Törölt pénzügyek ({{ deletedSharedCount }})
+                                </button>
+                                <button @click="historyFilter = 'deleted_payments'" 
+                                        :class="historyFilter === 'deleted_payments' ? 'bg-amber-600 text-white shadow' : 'bg-slate-800 text-slate-400 hover:text-slate-200'" 
+                                        class="px-3 py-1.5 rounded-lg text-xs font-bold transition">
+                                    Törölt részletek
+                                </button>
+                                <button @click="historyFilter = 'payments_added'" 
+                                        :class="historyFilter === 'payments_added' ? 'bg-emerald-600 text-white shadow' : 'bg-slate-800 text-slate-400 hover:text-slate-200'" 
+                                        class="px-3 py-1.5 rounded-lg text-xs font-bold transition">
+                                    Befizetések & Új megosztások
+                                </button>
+                            </div>
+                            <div class="text-xs text-slate-400 flex items-center gap-1.5">
+                                <i class="ph-bold ph-shield-check text-indigo-400 text-sm"></i> Minden törléshez kötelező min. 5 karakteres indoklás tartozik
+                            </div>
+                        </div>
+
+                        <!-- Előzmények lista -->
+                        <div v-if="filteredHistoryList.length === 0" class="text-center py-12 border border-dashed border-slate-700 rounded-xl glass">
+                            <i class="ph-duotone ph-clock-counter-clockwise text-4xl text-slate-600 mb-2 block"></i>
+                            <p class="text-slate-400 font-medium">Nincsenek megjeleníthető események a kiválasztott szűrővel.</p>
+                        </div>
+
+                        <div v-else class="space-y-4">
+                            <div v-for="item in filteredHistoryList" :key="item.id" class="transition">
+
+                                <!-- 1. TÖRLÖTT TELJES PÉNZÜGY KÁRTYA (ITEM_DELETED) -->
+                                <div v-if="item.type === 'ITEM_DELETED'" class="glass p-5 rounded-2xl border-l-4 border-rose-500 shadow-xl bg-slate-900/70">
+                                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 border-b border-slate-800 pb-3">
+                                        <div>
+                                            <div class="flex items-center gap-2">
+                                                <span class="text-xs px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider" :class="item.isRestored ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'">
+                                                    <i :class="item.isRestored ? 'ph-bold ph-check-circle' : 'ph-bold ph-trash'"></i>
+                                                    {{ item.isRestored ? 'Visszaállítva' : 'Törölt pénzügy' }}
+                                                </span>
+                                                <h4 class="text-xl font-bold text-white">{{ item.sharedName }}</h4>
+                                            </div>
+                                            <p class="text-xs text-slate-400 mt-1 flex flex-wrap items-center gap-2">
+                                                <span><i class="ph-bold ph-user text-slate-500"></i> Törölte: <b class="text-slate-300">{{ item.actionByEmail }}</b></span>
+                                                <span>•</span>
+                                                <span><i class="ph-bold ph-calendar text-slate-500"></i> {{ formatDateTime(item.createdAt) }}</span>
+                                            </p>
+                                        </div>
+
+                                        <!-- Visszaállítás (Restore) gomb -->
+                                        <div>
+                                            <button v-if="!item.isRestored" @click="restoreSharedItem(item)" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-4 py-2 rounded-xl text-sm shadow-lg shadow-emerald-600/20 flex items-center gap-2 transition hover:scale-[1.02] cursor-pointer">
+                                                <i class="ph-bold ph-arrow-counter-clockwise text-base"></i> Visszaállítás (Restore)
+                                            </button>
+                                            <div v-else class="text-xs text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 rounded-lg flex items-center gap-1.5 font-bold">
+                                                <i class="ph-bold ph-check-circle text-sm"></i>
+                                                <span>Visszaállítva: {{ formatDateTime(item.restoredAt) }} ({{ item.restoredByEmail ? item.restoredByEmail.split('@')[0] : '' }})</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Törlés kötelező indoklása doboz -->
+                                    <div class="mb-4 bg-rose-950/20 border border-rose-500/20 rounded-xl p-3">
+                                        <div class="flex items-start gap-2">
+                                            <i class="ph-fill ph-chat-centered-text text-rose-400 mt-0.5 text-base"></i>
+                                            <div>
+                                                <p class="text-[11px] font-bold uppercase tracking-wider text-rose-300">Törlés megadott indoklása:</p>
+                                                <p class="text-sm text-slate-200 mt-0.5 italic">"{{ item.reason }}"</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Pillanatkép részletei (Snapshot adatok) -->
+                                    <div v-if="item.snapshot" class="space-y-3">
+                                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-slate-950/40 p-3 rounded-xl border border-slate-800">
+                                            <div>
+                                                <p class="text-[10px] uppercase font-bold text-slate-500">Teljes összeg</p>
+                                                <p class="text-base font-bold text-white">{{ formatCurrency(item.snapshot.totalAmount) }}</p>
+                                            </div>
+                                            <div>
+                                                <p class="text-[10px] uppercase font-bold text-slate-500">Eddig kifizetve</p>
+                                                <p class="text-base font-bold text-emerald-400">{{ formatCurrency(item.snapshot.paidAmount) }}</p>
+                                            </div>
+                                            <div>
+                                                <p class="text-[10px] uppercase font-bold text-slate-500">Hátralevő összeg</p>
+                                                <p class="text-base font-bold text-amber-400">{{ formatCurrency(item.snapshot.remainingAmount) }}</p>
+                                            </div>
+                                            <div>
+                                                <p class="text-[10px] uppercase font-bold text-slate-500">Kifizetett részletek</p>
+                                                <p class="text-base font-bold text-indigo-300">{{ item.snapshot.paymentsCount || (item.snapshot.payments ? item.snapshot.payments.length : 0) }} db</p>
+                                            </div>
+                                        </div>
+
+                                        <!-- Kifizetett részletek listája (mennyi és mikor) -->
+                                        <div class="bg-slate-950/30 rounded-xl p-3 border border-slate-800/80">
+                                            <div class="flex justify-between items-center mb-2">
+                                                <p class="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                                                    <i class="ph-bold ph-receipt text-indigo-400"></i> Kifizetett részletek a törlés pillanatában:
+                                                </p>
+                                            </div>
+
+                                            <div v-if="item.snapshot.payments && item.snapshot.payments.length > 0" class="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+                                                <div v-for="(p, pIdx) in item.snapshot.payments" :key="pIdx" class="flex justify-between items-center bg-slate-900/60 p-2 rounded-lg text-xs border border-slate-800/50">
+                                                    <div class="flex items-center gap-2">
+                                                        <span class="font-mono text-slate-400">{{ pIdx + 1 }}.</span>
+                                                        <span class="text-slate-300">{{ formatDateTime(p.date) }}</span>
+                                                        <span v-if="p.payerEmail" class="text-indigo-400 font-semibold">({{ p.payerEmail.split('@')[0] }})</span>
+                                                        <span v-if="p.comment" class="text-slate-400 italic">"{{ p.comment }}"</span>
+                                                    </div>
+                                                    <span class="font-bold text-emerald-400">+{{ formatCurrency(p.amount) }}</span>
+                                                </div>
+                                            </div>
+                                            <div v-else class="text-xs text-slate-500 italic py-1">
+                                                Nem történt még részletfizetés ezen a tételen a törlés előtt.
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 2. TÖRÖLT RÉSZLETFIZETÉS (PAYMENT_DELETED) -->
+                                <div v-else-if="item.type === 'PAYMENT_DELETED'" class="glass p-4 rounded-xl border-l-4 border-amber-500 shadow bg-slate-900/60">
+                                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                        <div>
+                                            <div class="flex items-center gap-2">
+                                                <span class="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                                                    <i class="ph-bold ph-trash"></i> Törölt részlet
+                                                </span>
+                                                <span class="font-bold text-white text-base">{{ item.sharedName }}</span>
+                                                <span class="text-rose-400 font-bold text-sm">-{{ formatCurrency(item.details ? item.details.amount : 0) }}</span>
+                                            </div>
+                                            <p class="text-xs text-slate-400 mt-1 flex flex-wrap items-center gap-2">
+                                                <span><i class="ph-bold ph-user text-slate-500"></i> Törölte: <b class="text-slate-300">{{ item.actionByEmail }}</b></span>
+                                                <span>•</span>
+                                                <span><i class="ph-bold ph-calendar text-slate-500"></i> {{ formatDateTime(item.createdAt) }}</span>
+                                                <span v-if="item.details && item.details.paymentDate">• Eredeti dátum: {{ formatDateTime(item.details.paymentDate) }}</span>
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <!-- Indoklás -->
+                                    <div class="mt-2 bg-slate-950/40 border border-amber-500/20 rounded-lg p-2.5 text-xs text-slate-200">
+                                        <span class="font-bold text-amber-400">Törlés oka:</span> <span class="italic">"{{ item.reason }}"</span>
+                                    </div>
+                                </div>
+
+                                <!-- 3. BEFIZETÉS HOZZÁADVA (PAYMENT_ADDED) -->
+                                <div v-else-if="item.type === 'PAYMENT_ADDED'" class="glass p-3 rounded-xl border-l-4 border-emerald-500 shadow-sm bg-slate-900/40 flex justify-between items-center">
+                                    <div>
+                                        <div class="flex items-center gap-2">
+                                            <span class="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                                                <i class="ph-bold ph-plus-circle"></i> Befizetés
+                                            </span>
+                                            <span class="font-semibold text-white text-sm">{{ item.sharedName }}</span>
+                                            <span v-if="item.details && item.details.comment" class="text-xs text-slate-400 italic">"{{ item.details.comment }}"</span>
+                                        </div>
+                                        <p class="text-[11px] text-slate-400 mt-0.5">
+                                            Rögzítette: <span class="text-slate-300">{{ item.actionByEmail }}</span> • {{ formatDateTime(item.createdAt) }}
+                                        </p>
+                                    </div>
+                                    <div class="text-emerald-400 font-bold text-base font-mono">
+                                        +{{ formatCurrency(item.details ? item.details.amount : 0) }}
+                                    </div>
+                                </div>
+
+                                <!-- 4. ÚJ PÉNZÜGY LÉTREHOZVA (ITEM_CREATED) -->
+                                <div v-else-if="item.type === 'ITEM_CREATED'" class="glass p-3 rounded-xl border-l-4 border-indigo-500 shadow-sm bg-slate-900/40 flex justify-between items-center">
+                                    <div>
+                                        <div class="flex items-center gap-2">
+                                            <span class="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                                                <i class="ph-bold ph-hand-coins"></i> Új megosztás
+                                            </span>
+                                            <span class="font-semibold text-white text-sm">{{ item.sharedName }}</span>
+                                        </div>
+                                        <p class="text-[11px] text-slate-400 mt-0.5">
+                                            Létrehozta: <span class="text-slate-300">{{ item.actionByEmail }}</span> • {{ formatDateTime(item.createdAt) }}
+                                        </p>
+                                    </div>
+                                    <div class="text-indigo-300 font-bold text-sm">
+                                        Keret: {{ formatCurrency(item.details ? item.details.totalAmount : 0) }}
+                                    </div>
+                                </div>
+
+                                <!-- 5. VISSZAÁLLÍTOTT TÉTEL NAPLÓ (ITEM_RESTORED) -->
+                                <div v-else-if="item.type === 'ITEM_RESTORED'" class="glass p-3 rounded-xl border-l-4 border-teal-500 shadow-sm bg-slate-900/40 flex justify-between items-center">
+                                    <div>
+                                        <div class="flex items-center gap-2">
+                                            <span class="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase bg-teal-500/20 text-teal-300 border border-teal-500/30">
+                                                <i class="ph-bold ph-arrow-counter-clockwise"></i> Visszaállítva
+                                            </span>
+                                            <span class="font-semibold text-white text-sm">{{ item.sharedName }}</span>
+                                        </div>
+                                        <p class="text-[11px] text-slate-400 mt-0.5">
+                                            Visszaállította: <span class="text-slate-300">{{ item.actionByEmail }}</span> • {{ formatDateTime(item.createdAt) }}
+                                        </p>
+                                    </div>
+                                    <div class="text-xs text-teal-400 font-bold">
+                                        Sikeresen helyreállítva
+                                    </div>
+                                </div>
+
+                            </div>
                         </div>
                     </div>
                 </div> <!-- End shared view -->
@@ -1753,6 +2063,107 @@
                 </div>
             </div>
         </transition>
+                <!-- ==================== V27: KÖTELEZŐ INDOKLÁSÚ TÖRLÉSI MODAL ==================== -->
+        <transition name="modal">
+            <div v-if="showDeleteModal && deleteModalData" class="fixed inset-0 z-[110] flex items-center justify-center p-4">
+                <div class="absolute inset-0 bg-slate-900/80 backdrop-blur-sm" @click="showDeleteModal = false"></div>
+                <div class="glass modal-content w-full max-w-lg rounded-2xl p-6 relative z-10 shadow-2xl border border-rose-500/40 bg-slate-900/95">
+                    
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="flex items-center gap-2.5">
+                            <div class="w-10 h-10 rounded-xl bg-rose-500/20 text-rose-400 flex items-center justify-center text-xl border border-rose-500/30">
+                                <i class="ph-bold ph-warning"></i>
+                            </div>
+                            <div>
+                                <h2 class="text-lg font-bold text-white">
+                                    {{ deleteModalData.type === 'payment' ? 'Befizetési részlet törlése' : 'Teljes megosztott pénzügy törlése' }}
+                                </h2>
+                                <p class="text-xs text-slate-400">A törlés bekerül a közös Előzményekbe (History).</p>
+                            </div>
+                        </div>
+                        <button @click="showDeleteModal = false" class="text-slate-400 hover:text-white transition p-1"><i class="ph-bold ph-x text-xl"></i></button>
+                    </div>
+
+                    <!-- Törlendő elem adatai -->
+                    <div class="bg-slate-950/60 p-3.5 rounded-xl border border-slate-800 mb-4 space-y-2">
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs text-slate-400 font-bold uppercase">Pénzügyi tétel:</span>
+                            <span class="text-sm font-bold text-white">{{ deleteModalData.sharedName }}</span>
+                        </div>
+                        
+                        <!-- Ha fizetést törlünk -->
+                        <template v-if="deleteModalData.type === 'payment'">
+                            <div class="flex justify-between items-center">
+                                <span class="text-xs text-slate-400 font-bold uppercase">Törlendő összeg:</span>
+                                <span class="text-base font-bold text-rose-400">-{{ formatCurrency(deleteModalData.amount) }}</span>
+                            </div>
+                            <div v-if="deleteModalData.paymentDate" class="flex justify-between items-center text-xs">
+                                <span class="text-slate-400 font-bold uppercase">Befizetés dátuma:</span>
+                                <span class="text-slate-300">{{ formatDateTime(deleteModalData.paymentDate) }}</span>
+                            </div>
+                            <div v-if="deleteModalData.payerEmail" class="flex justify-between items-center text-xs">
+                                <span class="text-slate-400 font-bold uppercase">Befizető:</span>
+                                <span class="text-slate-300">{{ deleteModalData.payerEmail }}</span>
+                            </div>
+                            <div v-if="deleteModalData.comment" class="flex justify-between items-center text-xs">
+                                <span class="text-slate-400 font-bold uppercase">Megjegyzés:</span>
+                                <span class="text-slate-300 italic">"{{ deleteModalData.comment }}"</span>
+                            </div>
+                        </template>
+
+                        <!-- Ha teljes megosztott pénzügyet törlünk -->
+                        <template v-else>
+                            <div class="grid grid-cols-3 gap-2 pt-1 border-t border-slate-800 text-center">
+                                <div>
+                                    <p class="text-[10px] uppercase text-slate-500 font-bold">Teljes összeg</p>
+                                    <p class="text-xs font-bold text-white">{{ formatCurrency(deleteModalData.totalAmount) }}</p>
+                                </div>
+                                <div>
+                                    <p class="text-[10px] uppercase text-slate-500 font-bold">Eddig befizetve</p>
+                                    <p class="text-xs font-bold text-emerald-400">{{ formatCurrency(deleteModalData.paidAmount) }}</p>
+                                </div>
+                                <div>
+                                    <p class="text-[10px] uppercase text-slate-500 font-bold">Hátralévő</p>
+                                    <p class="text-xs font-bold text-amber-400">{{ formatCurrency(deleteModalData.remainingAmount) }}</p>
+                                </div>
+                            </div>
+                            <p class="text-[11px] text-amber-300/90 bg-amber-500/10 p-2 rounded-lg border border-amber-500/20 mt-2">
+                                <i class="ph-bold ph-info"></i> A törlés után a teljes jelenlegi állapot (összes eddigi részlet) mentésre kerül a History-ba, és onnan a <b>Restore gombbal</b> bármikor visszaállítható!
+                            </p>
+                        </template>
+                    </div>
+
+                    <!-- Kötelező indoklás mező -->
+                    <div class="space-y-1.5 mb-5">
+                        <label class="block text-xs font-bold text-slate-300">
+                            Törlés indoklása <span class="text-rose-400 font-bold">* (legalább 5 karakter)</span>
+                        </label>
+                        <textarea v-model="deleteReason" rows="3" placeholder="Írd meg pontosan, miért szeretnéd törölni ezt a tételt..." class="glass-input w-full p-3 rounded-xl text-sm focus:border-rose-500 placeholder-slate-500"></textarea>
+                        
+                        <div class="flex justify-between items-center text-xs pt-1">
+                            <span :class="deleteReason.trim().length >= 5 ? 'text-emerald-400 font-bold' : 'text-rose-400 font-medium'">
+                                <i :class="deleteReason.trim().length >= 5 ? 'ph-bold ph-check' : 'ph-bold ph-x'"></i>
+                                {{ deleteReason.trim().length }} / 5 karakter (minimum)
+                            </span>
+                            <span v-if="deleteReason.trim().length < 5" class="text-rose-400 text-[11px]">
+                                Még legalább {{ 5 - deleteReason.trim().length }} karakter szükséges
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Művelet gombok -->
+                    <div class="flex justify-end items-center gap-3">
+                        <button @click="showDeleteModal = false" class="px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-400 hover:text-white hover:bg-slate-800 transition">
+                            Mégse
+                        </button>
+                        <button :disabled="deleteReason.trim().length < 5" @click="executeDeletion" class="px-5 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 transition" :class="deleteReason.trim().length >= 5 ? 'bg-rose-600 hover:bg-rose-500 text-white shadow-lg shadow-rose-600/30 cursor-pointer' : 'bg-slate-800 text-slate-600 cursor-not-allowed border border-slate-700/50'">
+                            <i class="ph-bold ph-trash"></i> Végleges törlés
+                        </button>
+                    </div>
+
+                </div>
+            </div>
+        </transition>
         <transition name="modal">
             <div v-if="showJoinModal" class="fixed inset-0 z-[100] flex items-center justify-center p-4">
                 <div class="absolute inset-0 bg-slate-900/80 backdrop-blur-sm" @click="showJoinModal = false"></div>
@@ -1777,7 +2188,7 @@
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-    import { getFirestore, collection, addDoc, deleteDoc, doc, query, where, onSnapshot, serverTimestamp, setDoc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, deleteDoc, doc, query, where, onSnapshot, serverTimestamp, setDoc, getDoc, getDocs, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyDb3gUMx-X3WZUu3QYsKxcnu7bNDJy6bws",
@@ -1867,7 +2278,330 @@
             const joinedSharedItems = ref([]);
             const joinedSharedRefs = ref([]);
             const sharedItems = ref([]);
+            // --- V27: Megosztott pénzügyek History & Törlési modál állapotok ---
+            const sharedSubTab = ref('active'); // 'active' | 'history'
+            const historyFilter = ref('all'); // 'all' | 'deleted_items' | 'deleted_payments' | 'payments_added'
+            const ownedHistoryItems = ref([]);
+            const joinedHistoryMap = ref({});
+            const sharedHistoryList = ref([]);
+            const historyUnsubscribes = {};
+
+            const updateCombinedHistory = () => {
+                const map = new Map();
+                ownedHistoryItems.value.forEach(item => {
+                    map.set(item.id, item);
+                });
+                Object.values(joinedHistoryMap.value).forEach(list => {
+                    if (Array.isArray(list)) {
+                        list.forEach(item => {
+                            map.set(item.id, item);
+                        });
+                    }
+                });
+                const combined = Array.from(map.values());
+                combined.sort((a, b) => {
+                    const timeA = (a.createdAt && a.createdAt.seconds) ? a.createdAt.seconds : (a.createdAt ? new Date(a.createdAt).getTime() / 1000 : 0);
+                    const timeB = (b.createdAt && b.createdAt.seconds) ? b.createdAt.seconds : (b.createdAt ? new Date(b.createdAt).getTime() / 1000 : 0);
+                    return timeB - timeA;
+                });
+                sharedHistoryList.value = combined;
+            };
+
+            const deletedSharedCount = computed(() => {
+                return sharedHistoryList.value.filter(x => x.type === 'ITEM_DELETED' && !x.isRestored).length;
+            });
+
+            const restoredSharedCount = computed(() => {
+                return sharedHistoryList.value.filter(x => x.type === 'ITEM_RESTORED' || (x.type === 'ITEM_DELETED' && x.isRestored)).length;
+            });
+
+            const filteredHistoryList = computed(() => {
+                if (historyFilter.value === 'deleted_items') {
+                    return sharedHistoryList.value.filter(x => x.type === 'ITEM_DELETED');
+                }
+                if (historyFilter.value === 'deleted_payments') {
+                    return sharedHistoryList.value.filter(x => x.type === 'PAYMENT_DELETED');
+                }
+                if (historyFilter.value === 'payments_added') {
+                    return sharedHistoryList.value.filter(x => x.type === 'PAYMENT_ADDED' || x.type === 'ITEM_CREATED');
+                }
+                return sharedHistoryList.value;
+            });
+
+            const showDeleteModal = ref(false);
+            const deleteModalData = ref(null);
+            const deleteReason = ref('');
+
+            const confirmDeletePayment = (shared, payment) => {
+                deleteModalData.value = {
+                    type: 'payment',
+                    sharedId: shared.id,
+                    sharedName: shared.name,
+                    ownerUid: shared.ownerUid,
+                    paymentId: payment.id,
+                    amount: payment.amount,
+                    paymentDate: payment.date,
+                    payerEmail: payment.payerEmail,
+                    comment: payment.comment,
+                    linkedNoteId: payment.linkedNoteId,
+                    linkedNoteUserUid: payment.linkedNoteUserUid,
+                    budgetImpact: payment.budgetImpact
+                };
+                deleteReason.value = '';
+                showDeleteModal.value = true;
+            };
+
+            const confirmDeleteShared = (shared) => {
+                const paymentsSnapshot = (shared.payments || []).map(p => ({
+                    id: p.id,
+                    amount: p.amount,
+                    comment: p.comment || '',
+                    date: p.date || null,
+                    payerEmail: p.payerEmail || '',
+                    payerUid: p.payerUid || '',
+                    budgetImpact: p.budgetImpact || 'subtract',
+                    linkedNoteId: p.linkedNoteId || null,
+                    linkedNoteUserUid: p.linkedNoteUserUid || null
+                }));
+                deleteModalData.value = {
+                    type: 'shared_item',
+                    sharedId: shared.id,
+                    sharedName: shared.name,
+                    ownerUid: shared.ownerUid,
+                    isOwner: shared.isOwner,
+                    totalAmount: shared.totalAmount,
+                    paidAmount: shared.paidAmount,
+                    remainingAmount: shared.remainingAmount,
+                    totalMonths: shared.totalMonths,
+                    customMonthlyAmount: shared.customMonthlyAmount || null,
+                    defaultDay: shared.defaultDay || 1,
+                    payments: paymentsSnapshot
+                };
+                deleteReason.value = '';
+                showDeleteModal.value = true;
+            };
+
+            const executeDeletion = async () => {
+                const reason = deleteReason.value.trim();
+                if (reason.length < 5) {
+                    alert("A törlési indoklásnak legalább 5 karakter hosszúnak kell lennie!");
+                    return;
+                }
+                const data = deleteModalData.value;
+                if (!data) return;
+
+                try {
+                    if (data.type === 'payment') {
+                        // 1. Kapcsolt Tervezés jegyzet törlése
+                        if (data.linkedNoteId) {
+                            const targetUid = data.linkedNoteUserUid || user.value.uid;
+                            try {
+                                await deleteDoc(doc(db, `users/${targetUid}/notes`, data.linkedNoteId));
+                            } catch (err) {
+                                console.warn("Nem sikerült törölni a kapcsolt jegyzetet:", err);
+                            }
+                        }
+
+                        // 2. Befizetés törlése a fizetések algyűjteményből
+                        await deleteDoc(doc(db, `users/${data.ownerUid}/shared/${data.sharedId}/payments`, data.paymentId));
+
+                        // 3. Naplózás a History-ba
+                        await addDoc(collection(db, `users/${data.ownerUid}/shared_history`), {
+                            type: 'PAYMENT_DELETED',
+                            sharedId: data.sharedId,
+                            sharedName: data.sharedName,
+                            ownerUid: data.ownerUid,
+                            reason: reason,
+                            actionByEmail: user.value.email,
+                            actionByUid: user.value.uid,
+                            createdAt: serverTimestamp(),
+                            details: {
+                                paymentId: data.paymentId,
+                                amount: data.amount,
+                                comment: data.comment || '',
+                                paymentDate: data.paymentDate || null,
+                                payerEmail: data.payerEmail || '',
+                                budgetImpact: data.budgetImpact || 'subtract'
+                            }
+                        });
+
+                    } else if (data.type === 'shared_item') {
+                        const snapshot = {
+                            name: data.sharedName,
+                            totalAmount: data.totalAmount,
+                            totalMonths: data.totalMonths,
+                            customMonthlyAmount: data.customMonthlyAmount,
+                            defaultDay: data.defaultDay,
+                            paidAmount: data.paidAmount,
+                            remainingAmount: data.remainingAmount,
+                            paymentsCount: data.payments ? data.payments.length : 0,
+                            payments: data.payments || []
+                        };
+
+                        // 1. Megosztott dokumentum megjelölése töröltként (soft-delete az adatok és fizetések megőrzésére)
+                        await updateDoc(doc(db, `users/${data.ownerUid}/shared`, data.sharedId), {
+                            isDeleted: true,
+                            deletedAt: serverTimestamp(),
+                            deletedByEmail: user.value.email,
+                            deletedByUid: user.value.uid,
+                            deleteReason: reason
+                        });
+
+                        // 2. Részletes napló bejegyzés mentése a History-ba a teljes pillanatképpel
+                        await addDoc(collection(db, `users/${data.ownerUid}/shared_history`), {
+                            type: 'ITEM_DELETED',
+                            sharedId: data.sharedId,
+                            sharedName: data.sharedName,
+                            ownerUid: data.ownerUid,
+                            reason: reason,
+                            actionByEmail: user.value.email,
+                            actionByUid: user.value.uid,
+                            createdAt: serverTimestamp(),
+                            isRestored: false,
+                            snapshot: snapshot
+                        });
+                    }
+
+                    showDeleteModal.value = false;
+                    deleteModalData.value = null;
+                    deleteReason.value = '';
+                } catch (e) {
+                    console.error("Hiba törléskor:", e);
+                    alert("Hiba történt a törlés során: " + e.message);
+                }
+            };
+
+            const restoreSharedItem = async (historyEntry) => {
+                if (!confirm(`Biztosan visszaállítod a(z) "${historyEntry.sharedName}" megosztott pénzügyet az összes korábbi befizetéssel együtt?`)) {
+                    return;
+                }
+
+                try {
+                    const ownerUid = historyEntry.ownerUid || user.value.uid;
+                    const sharedId = historyEntry.sharedId;
+                    const docRef = doc(db, `users/${ownerUid}/shared`, sharedId);
+                    const docSnap = await getDoc(docRef);
+
+                    if (docSnap.exists()) {
+                        await updateDoc(docRef, {
+                            isDeleted: false,
+                            restoredAt: serverTimestamp(),
+                            restoredByEmail: user.value.email,
+                            restoredByUid: user.value.uid
+                        });
+                    } else if (historyEntry.snapshot) {
+                        const snap = historyEntry.snapshot;
+                        await setDoc(docRef, {
+                            name: snap.name,
+                            totalAmount: snap.totalAmount,
+                            totalMonths: snap.totalMonths || 1,
+                            customMonthlyAmount: snap.customMonthlyAmount || null,
+                            defaultDay: snap.defaultDay || 1,
+                            isDeleted: false,
+                            restoredAt: serverTimestamp(),
+                            restoredByEmail: user.value.email,
+                            createdAt: serverTimestamp()
+                        });
+
+                        if (snap.payments && snap.payments.length > 0) {
+                            for (const p of snap.payments) {
+                                await setDoc(doc(db, `users/${ownerUid}/shared/${sharedId}/payments`, p.id || String(Date.now())), {
+                                    amount: p.amount,
+                                    comment: p.comment || '',
+                                    payerEmail: p.payerEmail || user.value.email,
+                                    payerUid: p.payerUid || user.value.uid,
+                                    budgetImpact: p.budgetImpact || 'subtract',
+                                    date: p.date || serverTimestamp()
+                                });
+                            }
+                        }
+                    }
+
+                    if (historyEntry.id) {
+                        await updateDoc(doc(db, `users/${ownerUid}/shared_history`, historyEntry.id), {
+                            isRestored: true,
+                            restoredAt: serverTimestamp(),
+                            restoredByEmail: user.value.email
+                        });
+                    }
+
+                    await addDoc(collection(db, `users/${ownerUid}/shared_history`), {
+                        type: 'ITEM_RESTORED',
+                        sharedId: sharedId,
+                        sharedName: historyEntry.sharedName,
+                        ownerUid: ownerUid,
+                        actionByEmail: user.value.email,
+                        actionByUid: user.value.uid,
+                        createdAt: serverTimestamp(),
+                        details: {
+                            restoredFromHistoryId: historyEntry.id,
+                            totalAmount: historyEntry.snapshot ? historyEntry.snapshot.totalAmount : 0,
+                            paidAmount: historyEntry.snapshot ? historyEntry.snapshot.paidAmount : 0,
+                            remainingAmount: historyEntry.snapshot ? historyEntry.snapshot.remainingAmount : 0
+                        }
+                    });
+
+                    alert(`A(z) "${historyEntry.sharedName}" megosztott pénzügy sikeresen visszaállítva!`);
+                } catch (e) {
+                    console.error("Hiba a visszaállításkor:", e);
+                    alert("Hiba történt a visszaállításkor: " + e.message);
+                }
+            };
             const joinedUnsubscribes = {};
+
+            // --- V26: Megosztott tételek egyéni költségvetési hatás beállításai ---
+            const sharedBudgetImpacts = ref({});
+
+            const getSharedImpact = (sharedId) => {
+                if (sharedBudgetImpacts.value[sharedId]) {
+                    return sharedBudgetImpacts.value[sharedId];
+                }
+                if (user.value && user.value.uid) {
+                    try {
+                        const stored = localStorage.getItem(`shared_impact_${user.value.uid}_${sharedId}`);
+                        if (stored) {
+                            sharedBudgetImpacts.value[sharedId] = stored;
+                            return stored;
+                        }
+                    } catch (e) {}
+                }
+                return 'subtract';
+            };
+
+            const setSharedImpact = (sharedId, impact) => {
+                sharedBudgetImpacts.value = {
+                    ...sharedBudgetImpacts.value,
+                    [sharedId]: impact
+                };
+                if (user.value && user.value.uid) {
+                    try {
+                        localStorage.setItem(`shared_impact_${user.value.uid}_${sharedId}`, impact);
+                        setDoc(doc(db, `users/${user.value.uid}/shared_prefs`, sharedId), {
+                            budgetImpact: impact,
+                            updatedAt: serverTimestamp()
+                        }, { merge: true }).catch(err => console.warn("Nem sikerült elmenteni a preferenciát Firestore-ba:", err));
+                    } catch (e) {
+                        console.warn("Storage mentési hiba:", e);
+                    }
+                }
+            };
+
+            const loadSharedPreferences = async (uid) => {
+                try {
+                    const snap = await getDocs(collection(db, `users/${uid}/shared_prefs`));
+                    snap.forEach(docSnap => {
+                        const data = docSnap.data();
+                        if (data && data.budgetImpact) {
+                            sharedBudgetImpacts.value[docSnap.id] = data.budgetImpact;
+                            try {
+                                localStorage.setItem(`shared_impact_${uid}_${docSnap.id}`, data.budgetImpact);
+                            } catch (e) {}
+                        }
+                    });
+                } catch (err) {
+                    console.warn("Nem sikerült betölteni a megosztott preferenciákat:", err);
+                }
+            };
             const paymentsUnsubscribes = {};
             
             const showJoinModal = ref(false);
@@ -1933,7 +2667,8 @@
 
             onAuthStateChanged(auth, async (u) => {
                 user.value = u;
-                if (u) { 
+                if (u) {
+                    loadSharedPreferences(u.uid); 
                     const prefSnap = await getDoc(doc(db, `users/${u.uid}/settings/preferences`));
                     if (prefSnap.exists()) {
                         const data = prefSnap.data();
@@ -2003,6 +2738,14 @@
                 onSnapshot(query(collection(db, `users/${uid}/bills`)), (snap) => {
                     allBills.value = snap.docs.map(d => ({ id: d.id, ...d.data() }));
                 });
+                // V27: Saját megosztások előzményei (History) figyelése
+                if (!historyUnsubscribes['owned_' + uid]) {
+                    historyUnsubscribes['owned_' + uid] = onSnapshot(query(collection(db, `users/${uid}/shared_history`)), (hSnap) => {
+                        ownedHistoryItems.value = hSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+                        updateCombinedHistory();
+                    });
+                }
+
                 // Saját megosztások
                 onSnapshot(query(collection(db, `users/${uid}/shared`)), (snap) => {
                     const items = snap.docs.map(d => ({ id: d.id, ownerUid: uid, isOwner: true, ...d.data(), payments: [] }));
@@ -2015,8 +2758,16 @@
                 onSnapshot(query(collection(db, `users/${uid}/joined_shared`)), (snap) => {
                     joinedSharedRefs.value = snap.docs.map(d => ({ joinId: d.id, ...d.data() }));
                     
-                    // Minden csatlakozáshoz feliratkozunk az eredeti dokumentumra
+                    // Minden csatlakozáshoz feliratkozunk az eredeti dokumentumra és a History-ra
                     joinedSharedRefs.value.forEach(join => {
+                        // V27: Csatlakozott megosztás History figyelése
+                        if (!historyUnsubscribes['joined_' + join.creatorUid]) {
+                            historyUnsubscribes['joined_' + join.creatorUid] = onSnapshot(query(collection(db, `users/${join.creatorUid}/shared_history`)), (hSnap) => {
+                                joinedHistoryMap.value[join.creatorUid] = hSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+                                updateCombinedHistory();
+                            });
+                        }
+
                         if (!joinedUnsubscribes[join.joinId]) {
                             joinedUnsubscribes[join.joinId] = onSnapshot(doc(db, `users/${join.creatorUid}/shared/${join.itemId}`), (docSnap) => {
                                 if (docSnap.exists()) {
@@ -2042,6 +2793,14 @@
             };
 
             const resetData = () => {
+                sharedBudgetImpacts.value = {};
+                ownedHistoryItems.value = [];
+                joinedHistoryMap.value = {};
+                sharedHistoryList.value = [];
+                Object.keys(historyUnsubscribes).forEach(k => {
+                    if (historyUnsubscribes[k]) historyUnsubscribes[k]();
+                    delete historyUnsubscribes[k];
+                });
                 savingsEntries.value = [];
                 allBills.value = [];
                 providers.value = [];
@@ -2289,7 +3048,7 @@
 
 
             const activeShared = computed(() => {
-                return sharedItems.value.map(item => {
+                return sharedItems.value.filter(item => !item.isDeleted).map(item => {
                     const paidAmount = item.payments ? item.payments.reduce((sum, p) => sum + p.amount, 0) : 0;
                     const paidCount = item.payments ? item.payments.length : 0;
                     const remainingAmount = item.totalAmount - paidAmount;
@@ -2329,8 +3088,8 @@
                         remainingMonthsCount,
                         dynamicTotalMonths,
                         daysUntilNext,
-                        customPayment: '',
-                        customComment: ''
+                        customPayment: item.customPayment !== undefined ? item.customPayment : '',
+                        customComment: item.customComment !== undefined ? item.customComment : ''
                     };
                 });
             });
@@ -2383,13 +3142,30 @@
                         calcMonths = parseInt(months) || 1;
                     }
 
-                    await addDoc(collection(db, `users/${user.value.uid}/shared`), {
+                    const sharedDocRef = await addDoc(collection(db, `users/${user.value.uid}/shared`), {
                         name, 
                         totalAmount: parseFloat(amount), 
                         totalMonths: calcMonths, 
                         customMonthlyAmount: customMonthly,
                         defaultDay: parseInt(defaultDay) || 1, 
                         createdAt: serverTimestamp()
+                    });
+
+                    // V27: Naplózás a History-ba
+                    await addDoc(collection(db, `users/${user.value.uid}/shared_history`), {
+                        type: 'ITEM_CREATED',
+                        sharedId: sharedDocRef.id,
+                        sharedName: name,
+                        ownerUid: user.value.uid,
+                        actionByEmail: user.value.email,
+                        actionByUid: user.value.uid,
+                        createdAt: serverTimestamp(),
+                        details: {
+                            totalAmount: parseFloat(amount),
+                            totalMonths: calcMonths,
+                            customMonthlyAmount: customMonthly,
+                            defaultDay: parseInt(defaultDay) || 1
+                        }
                     });
                     newShared.value = { name: '', amount: '', inputMode: 'months', months: '', monthlyAmount: '', defaultDay: '' };
                 } catch (e) {
@@ -2428,17 +3204,9 @@
             };
 
             const deleteShared = async (id, isOwner) => { 
-                if(confirm(isOwner ? 'Törlöd ezt a tételt végleg?' : 'Kilépsz ebből a közös pénzügyből?')) {
-                    if (isOwner) {
-                        await deleteDoc(doc(db, `users/${user.value.uid}/shared`, id)); 
-                    } else {
-                        const joinItem = joinedSharedItems.value.find(x => x.id === id);
-                        if (joinItem && joinItem.joinId) {
-                            await deleteDoc(doc(db, `users/${user.value.uid}/joined_shared`, joinItem.joinId));
-                            joinedSharedItems.value = joinedSharedItems.value.filter(x => x.id !== id);
-                            updateCombinedShared();
-                        }
-                    }
+                const sharedItem = sharedItems.value.find(s => s.id === id);
+                if (sharedItem) {
+                    confirmDeleteShared(sharedItem);
                 }
             };
             const editingPaymentId = ref(null);
@@ -2458,11 +3226,34 @@
             };
 
             const savePaymentEdit = async (sharedId, paymentId) => {
+                if (!editingPaymentAmount.value || editingPaymentAmount.value <= 0) {
+                    alert('Kérlek érvényes összeget adj meg!');
+                    return;
+                }
+                const sharedItem = sharedItems.value.find(s => s.id === sharedId);
+                if (!sharedItem) return;
                 try {
-                    const sharedItem = sharedItems.value.find(s => s.id === sharedId);
+                    const newAmount = parseFloat(editingPaymentAmount.value);
+                    const newComment = editingPaymentComment.value.trim();
+                    const payment = sharedItem.payments ? sharedItem.payments.find(p => p.id === paymentId) : null;
+
+                    // V25: Ha volt kapcsolt Tervezés jegyzet, szinkronizáljuk a jegyzet tartalmát is
+                    if (payment && payment.linkedNoteId) {
+                        const targetUid = payment.linkedNoteUserUid || user.value.uid;
+                        const prefix = `Megosztott befizetés (${sharedItem.name || 'Közös kiadás'}${newComment ? ' - ' + newComment : ''})`;
+                        const sign = payment.budgetImpact === 'add' ? '+' : '-';
+                        try {
+                            await updateDoc(doc(db, `users/${targetUid}/notes`, payment.linkedNoteId), {
+                                content: `${prefix}: ${sign}${newAmount} RON`
+                            });
+                        } catch (err) {
+                            console.warn("Nem sikerült frissíteni a kapcsolt jegyzetet:", err);
+                        }
+                    }
+
                     await updateDoc(doc(db, `users/${sharedItem.ownerUid}/shared/${sharedId}/payments`, paymentId), {
-                        amount: parseFloat(editingPaymentAmount.value),
-                        comment: editingPaymentComment.value.trim(),
+                        amount: newAmount,
+                        comment: newComment,
                         editedAt: serverTimestamp()
                     });
                     editingPaymentId.value = null;
@@ -2472,16 +3263,72 @@
                 }
             };
 
-            const addSharedPayment = async (shared, customAmount, customComment) => {
+            const addSharedPayment = async (shared, customAmount, customComment, budgetImpact) => {
                 try {
                     const amountToPay = customAmount && customAmount > 0 ? parseFloat(customAmount) : shared.monthlyAmount;
                     const comment = customComment ? customComment.trim() : '';
-                    await addDoc(collection(db, `users/${shared.ownerUid}/shared/${shared.id}/payments`), {
+                    const impact = budgetImpact || 'subtract';
+                    let linkedNoteId = null;
+
+                    // V25: Ha hozzáadás vagy kivonás opció van kiválasztva, létrehozunk egy bejegyzést a Tervezésben
+                    if (impact === 'add' || impact === 'subtract') {
+                        const targetMonthKey = currentMonthKey.value;
+                        const sign = impact === 'add' ? '+' : '-';
+                        const itemName = shared.name || 'Közös kiadás';
+                        const noteContent = comment 
+                            ? `Megosztott befizetés (${itemName} - ${comment}): ${sign}${amountToPay} RON`
+                            : `Megosztott befizetés (${itemName}): ${sign}${amountToPay} RON`;
+
+                        const noteDocRef = await addDoc(collection(db, `users/${user.value.uid}/notes`), {
+                            content: noteContent,
+                            type: 'text',
+                            isDone: false,
+                            monthKey: targetMonthKey,
+                            source: 'shared_payment',
+                            sharedId: shared.id,
+                            createdAt: serverTimestamp()
+                        });
+                        linkedNoteId = noteDocRef.id;
+                    }
+
+                    const paymentDocRef = await addDoc(collection(db, `users/${shared.ownerUid}/shared/${shared.id}/payments`), {
                         amount: amountToPay, 
                         comment: comment,
                         payerEmail: user.value.email,
+                        payerUid: user.value.uid,
+                        budgetImpact: impact,
+                        linkedNoteId: linkedNoteId,
+                        linkedNoteUserUid: linkedNoteId ? user.value.uid : null,
                         date: serverTimestamp()
                     });
+
+                    // V27: Naplózás a History-ba
+                    await addDoc(collection(db, `users/${shared.ownerUid}/shared_history`), {
+                        type: 'PAYMENT_ADDED',
+                        sharedId: shared.id,
+                        sharedName: shared.name,
+                        ownerUid: shared.ownerUid,
+                        actionByEmail: user.value.email,
+                        actionByUid: user.value.uid,
+                        createdAt: serverTimestamp(),
+                        details: {
+                            paymentId: paymentDocRef.id,
+                            amount: amountToPay,
+                            comment: comment,
+                            budgetImpact: impact
+                        }
+                    });
+
+                    if (linkedNoteId) {
+                        try {
+                            await updateDoc(doc(db, `users/${user.value.uid}/notes`, linkedNoteId), {
+                                paymentId: paymentDocRef.id
+                            });
+                        } catch (err) {
+                            console.warn("Nem sikerült elmenteni a paymentId-t a jegyzetben:", err);
+                        }
+                    }
+
                     shared.customPayment = '';
                     shared.customComment = '';
                 } catch (e) {
@@ -2489,9 +3336,14 @@
                     alert("Hiba történt befizetéskor: " + e.message);
                 }
             };
+
             const deleteSharedPayment = async (sharedId, paymentId) => {
                 const sharedItem = sharedItems.value.find(s => s.id === sharedId);
-                await deleteDoc(doc(db, `users/${sharedItem.ownerUid}/shared/${sharedId}/payments`, paymentId));
+                if (!sharedItem) return;
+                const payment = sharedItem.payments ? sharedItem.payments.find(p => p.id === paymentId) : null;
+                if (payment) {
+                    confirmDeletePayment(sharedItem, payment);
+                }
             };
             const grandTotalRemaining = computed(() => activeInstallments.value.reduce((sum, i) => sum + i.remainingTotal, 0));
             const totalInstallments = computed(() => activeInstallments.value.reduce((sum, i) => sum + i.monthlyAmount, 0));
@@ -3099,16 +3951,51 @@
                 });
             };
 
-            watch([activeShared, currentView], () => {
-                // Kis késleltetés kell, hogy a Vue kirenderelje a canvas elemeket a v-for-ban
-                setTimeout(updateSharedChart, 200);
+            // V29: Figyeljük az aktív megosztásokat, a nézetet ÉS a megosztott alfület (sharedSubTab) is
+            watch([activeShared, currentView, sharedSubTab], () => {
+                if (currentView.value === 'shared' && sharedSubTab.value === 'active') {
+                    setTimeout(updateSharedChart, 100);
+                    setTimeout(updateSharedChart, 300);
+                }
             }, { deep: true });
+
+            watch(sharedSubTab, (newTab) => {
+                if (newTab === 'active') {
+                    setTimeout(updateSharedChart, 50);
+                    setTimeout(updateSharedChart, 200);
+                }
+            });
 
             watch([bills, totalInstallments, providers, currentView], () => {
                 setTimeout(updateChart, 100);
             }, { deep: true });
 
-            const formatCurrency = (val) => new Intl.NumberFormat('ro-RO', { style: 'currency', currency: 'RON', minimumFractionDigits: 0 }).format(val);
+            const formatCurrency = (val) => new Intl.NumberFormat('ro-RO', { style: 'currency', currency: 'RON', minimumFractionDigits: 0 }).format(val || 0);
+
+            // V27: Dátum és idő formázó segédfüggvény
+            const formatDateTime = (val) => {
+                if (!val) return '–';
+                try {
+                    let dateObj = null;
+                    if (val && typeof val.toDate === 'function') {
+                        dateObj = val.toDate();
+                    } else if (val && val.seconds) {
+                        dateObj = new Date(val.seconds * 1000);
+                    } else {
+                        dateObj = new Date(val);
+                    }
+                    if (isNaN(dateObj.getTime())) return '–';
+                    return dateObj.toLocaleString('hu-HU', {
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
+                } catch (e) {
+                    return '–';
+                }
+            };
 
 
             // ==================== V18: FÉLRETETT PÉNZ & VÉSZTARTALÉK LOGIKA ====================
@@ -3510,7 +4397,11 @@
                 newInstallment, addInstallment, deleteInstallment,
                 activeInstallments, totalInstallments, grandTotalRemaining,
                 showProviderModal,
-                activeShared, newShared, addShared, deleteShared, addSharedPayment, deleteSharedPayment, openEditShared, saveEditShared, showEditSharedModal, editingShared, showSettingsModal, userSettings, saveSettings, editingPaymentId, editingPaymentAmount, editingPaymentComment, startPaymentEdit, showJoinModal, joinCode, joinShared, copyShareCode, cancelPaymentEdit, savePaymentEdit,
+                activeShared, newShared, addShared, deleteShared, addSharedPayment, deleteSharedPayment,
+                sharedBudgetImpacts, getSharedImpact, setSharedImpact, openEditShared, saveEditShared, showEditSharedModal, editingShared, showSettingsModal, userSettings, saveSettings, editingPaymentId, editingPaymentAmount, editingPaymentComment, startPaymentEdit, showJoinModal, joinCode, joinShared, copyShareCode, cancelPaymentEdit, savePaymentEdit,
+                // V27: History, törlési modál és segédek
+                sharedSubTab, historyFilter, sharedHistoryList, filteredHistoryList, deletedSharedCount, restoredSharedCount,
+                showDeleteModal, deleteModalData, deleteReason, confirmDeletePayment, confirmDeleteShared, executeDeletion, restoreSharedItem, formatDateTime, updateSharedChart,
 
                 sortedNotes, newNoteContent, processNoteInput, toggleTodo, deleteNote,
                 editingNoteId, editingNoteContent, startEditNote, cancelEditNote, saveEditNote,
