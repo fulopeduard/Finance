@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Money manager v31 | Napi Kerettel</title>
+    <title>Money manager v39 | Napi Kerettel</title>
 
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -23,7 +23,7 @@
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #475569; border-radius: 10px; }
-        [v-cloak] { display: none; }
+        [v-cloak] { display: none !important; }
         .fade-enter-active, .fade-leave-active { transition: opacity 0.3s ease; }
         .fade-enter-from, .fade-leave-to { opacity: 0; }
 
@@ -72,7 +72,7 @@
             <div class="p-6 border-b border-slate-700/50">
                 <div class="flex items-center justify-between">
                     <h2 class="text-xl font-bold text-white">Money<span class="text-indigo-500"> manager</span></h2>
-                    <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-bold">v31</span>
+                    <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-bold">v39</span>
                 </div>
                 <p class="text-xs text-slate-500 mt-1">{{ user.email }}</p>
             </div>
@@ -108,7 +108,7 @@
         <div class="md:hidden fixed top-0 w-full glass z-50 p-4 flex justify-between items-center">
             <div class="flex items-center gap-2">
                 <span class="font-bold text-lg">Money manager</span>
-                <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-bold">v31</span>
+                <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-bold">v39</span>
             </div>
             <div class="flex gap-3 items-center">
                 <button @click="currentView = 'dashboard'" :class="currentView === 'dashboard' ? 'text-indigo-400' : 'text-slate-400'" title="Áttekintés"><i class="ph-bold ph-chart-pie-slice text-2xl"></i></button>
@@ -886,22 +886,132 @@
                         </div>
                     </div>
 
-                    <div class="glass p-6 rounded-xl">
-                        <p class="text-sm text-slate-400 mb-3 leading-relaxed">
-                            <i class="ph-bold ph-info text-indigo-400 mr-1"></i>
-                            Tipp: Használj <code class="bg-slate-700 px-1.5 py-0.5 rounded text-orange-400">#</code> jelet a sor elején teendőkhöz. Írj a jegyzetbe összegeket előjellel, pl. <code class="bg-emerald-900/40 text-emerald-300 border border-emerald-500/30 px-1.5 py-0.5 rounded font-mono">+3000 RON</code> vagy <code class="bg-rose-900/40 text-rose-300 border border-rose-500/30 px-1.5 py-0.5 rounded font-mono">-1500 RON</code>, és a rendszer automatikusan hozzáadja vagy levonja a havi keretedből!
-                        </p>
-
-                        <div class="flex flex-col sm:flex-row gap-4 items-start">
-                            <div class="flex-1 w-full">
-                                <textarea v-model="newNoteContent" placeholder="Írd ide a jegyzeted vagy teendőidet (pl. Eladni a hangfalat +3000 RON)..." class="glass-input w-full p-3 rounded-lg min-h-[80px]" @keyup.ctrl.enter="processNoteInput"></textarea>
-                                <p class="text-[10px] text-slate-500 mt-1 pl-1">Ctrl + Enter a mentéshez</p>
+                                            <!-- V37: SVG Pie Chart -->
+                        <div v-if="expensesByCategory.categories.length > 0" class="glass p-6 rounded-xl border border-slate-700/50 mb-6">
+                            <h3 class="text-lg font-bold text-slate-200 mb-4 flex items-center gap-2"><i class="ph-bold ph-chart-pie-slice text-indigo-400"></i> Havi Keret Felosztása</h3>
+                            <div class="flex flex-col sm:flex-row items-center gap-8">
+                                <!-- Diagram -->
+                                <div class="relative w-48 h-48 sm:w-56 sm:h-56 shrink-0 mx-auto">
+                                    <svg viewBox="0 0 100 100" class="w-full h-full drop-shadow-xl transform -rotate-90 overflow-visible">
+                                        <path v-for="slice in svgPieSlices" :key="slice.id" 
+                                              :d="slice.pathData" 
+                                              :fill="slice.color" 
+                                              class="transition-all duration-300 cursor-pointer stroke-slate-900 stroke-[0.5]"
+                                              :class="{'opacity-100 scale-[1.05] drop-shadow-2xl z-10': hoveredSlice === slice.id, 'opacity-40 scale-95': hoveredSlice && hoveredSlice !== slice.id}"
+                                              @mouseenter="hoveredSlice = slice.id" 
+                                              @mouseleave="hoveredSlice = null"
+                                              style="transform-origin: center;">
+                                        </path>
+                                        <text v-for="slice in svgPieSlices" :key="'text-'+slice.id"
+                                              v-show="slice.showText"
+                                              :x="slice.textX" :y="slice.textY"
+                                              fill="white"
+                                              font-size="4.5"
+                                              font-weight="bold"
+                                              text-anchor="middle"
+                                              alignment-baseline="middle"
+                                              class="transform rotate-90 transition-opacity duration-300"
+                                              :class="{'opacity-100': !hoveredSlice || hoveredSlice === slice.id, 'opacity-0': hoveredSlice && hoveredSlice !== slice.id}"
+                                              :style="{ transformOrigin: `${slice.textX}px ${slice.textY}px` }"
+                                              style="pointer-events: none; text-shadow: 0px 1px 3px rgba(0,0,0,0.8);">
+                                            {{ Math.round(slice.percentage) }}%
+                                        </text>
+                                    </svg>
+                                    <div class="absolute inset-0 m-auto w-24 h-24 sm:w-28 sm:h-28 bg-slate-900 rounded-full flex flex-col items-center justify-center shadow-inner z-0 border-4 border-slate-800" style="pointer-events: none;">
+                                        <span class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Havi Keret</span>
+                                        <span class="text-lg font-black text-white mt-1">{{ formatCurrency(expensesByCategory.total) }}</span>
+                                    </div>
+                                </div>
+                                
+                                <!-- Táblázatos Legenda -->
+                                <div class="flex-1 w-full max-w-sm">
+                                    <div class="bg-slate-800/30 rounded-xl border border-slate-700/50 overflow-hidden">
+                                        <div class="max-h-[260px] overflow-y-auto custom-scrollbar">
+                                            <table class="w-full text-left border-collapse">
+                                                <tbody>
+                                                    <tr v-for="cat in svgPieSlices" :key="cat.id" 
+                                                        class="border-b border-slate-700/30 hover:bg-slate-700/40 transition cursor-pointer"
+                                                        :class="{'bg-slate-700/60': hoveredSlice === cat.id}"
+                                                        @mouseenter="hoveredSlice = cat.id"
+                                                        @mouseleave="hoveredSlice = null">
+                                                        <td class="py-2.5 px-3 w-8">
+                                                            <div class="w-6 h-6 rounded-full flex items-center justify-center text-xs shadow-inner" :style="{ backgroundColor: cat.color }">
+                                                                <span class="drop-shadow-md">{{ cat.icon }}</span>
+                                                            </div>
+                                                        </td>
+                                                        <td class="py-2.5 px-2 text-xs font-semibold text-slate-200 whitespace-nowrap">
+                                                            {{ cat.name }}
+                                                        </td>
+                                                        <td class="py-2.5 px-3 text-right">
+                                                            <div class="text-xs font-black text-white">{{ formatCurrency(cat.amount) }}</div>
+                                                        </td>
+                                                        <td class="py-2.5 px-3 text-right w-12 border-l border-slate-700/30">
+                                                            <div class="text-[10px] font-bold" :style="{ color: cat.color }">{{ Math.round(cat.percentage) }}%</div>
+                                                        </td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                            <button @click="processNoteInput" class="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-3 rounded-lg font-bold transition flex items-center gap-2">
-                                <i class="ph-bold ph-plus"></i> Hozzáadás
-                            </button>
                         </div>
-                    </div>
+
+                        <div class="glass p-6 rounded-xl">
+                            <p class="text-sm text-slate-400 mb-3 leading-relaxed">
+                                <i class="ph-bold ph-info text-indigo-400 mr-1"></i>
+                                Tipp: Használj <code class="bg-slate-700 px-1.5 py-0.5 rounded text-orange-400">#</code> jelet a sor elején teendőkhöz. Írj a jegyzetbe összegeket előjellel, pl. <code class="bg-emerald-900/40 text-emerald-300 border border-emerald-500/30 px-1.5 py-0.5 rounded font-mono">+3000 RON</code> vagy <code class="bg-rose-900/40 text-rose-300 border border-rose-500/30 px-1.5 py-0.5 rounded font-mono">-1500 RON</code>, és a rendszer automatikusan hozzáadja vagy levonja a havi keretedből!
+                            </p>
+
+                            <!-- V32: Jegyzet rögzítés és Kategória választó -->
+                            <div class="flex flex-col sm:flex-row gap-4 items-stretch sm:items-end relative">
+                                <div class="flex-1 w-full relative">
+                                    <textarea v-model="newNoteContent" placeholder="Írd ide a jegyzeted vagy teendőidet (pl. Bevásárlás -1500 RON)..." class="glass-input w-full p-3 pb-12 rounded-lg min-h-[80px]" @keyup.ctrl.enter="processNoteInput"></textarea>
+                                    
+                                    <!-- V32: Kategória választó gomb és dropdown -->
+                                    <div class="absolute bottom-3 right-3">
+                                        <button @click.stop="showCategoryDropdown = !showCategoryDropdown" class="bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-600 px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-2 transition shadow-lg">
+                                            <span>{{ getCategoryDetails(selectedNoteCategory).icon }}</span>
+                                            <span>{{ getCategoryDetails(selectedNoteCategory).name }}</span>
+                                            <i class="ph-bold ph-caret-down"></i>
+                                        </button>
+                                        
+                                        <!-- Dropdown Overlay bezáráshoz -->
+                                        <div v-if="showCategoryDropdown" class="fixed inset-0 z-40" @click="showCategoryDropdown = false"></div>
+                                        
+                                        <!-- Dropdown Menü -->
+                                        <div v-if="showCategoryDropdown" class="absolute right-0 bottom-full mb-2 w-64 bg-slate-800 border border-slate-600 rounded-xl shadow-2xl z-50 flex flex-col overflow-hidden" @click.stop>
+                                            <div class="p-2 border-b border-slate-700">
+                                                <div class="relative">
+                                                    <i class="ph-bold ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                                                    <input v-model="categorySearch" type="text" placeholder="Kategória keresése..." class="w-full bg-slate-900 border border-slate-700 rounded-lg py-1.5 pl-9 pr-3 text-sm text-slate-200 focus:outline-none focus:border-indigo-500 transition">
+                                                </div>
+                                            </div>
+                                            <div class="max-h-60 overflow-y-auto custom-scrollbar p-1">
+                                                <div v-if="filteredNoteCategories.length === 0" class="text-center text-xs text-slate-500 py-4">Nincs találat</div>
+                                                <button v-for="cat in filteredNoteCategories" :key="cat.id" 
+                                                        @click="selectedNoteCategory = cat.id; showCategoryDropdown = false; categorySearch = ''"
+                                                        class="w-full text-left flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-700 transition text-sm text-slate-300"
+                                                        :class="{ 'bg-indigo-600/20 text-indigo-300': selectedNoteCategory === cat.id }">
+                                                    <span class="text-base">{{ cat.icon }}</span>
+                                                    <span class="flex-1 font-medium">{{ cat.name }}</span>
+                                                    <i v-if="selectedNoteCategory === cat.id" class="ph-bold ph-check text-indigo-400"></i>
+                                                </button>
+                                            </div>
+                                            <div class="p-2 border-t border-slate-700 bg-slate-900/50">
+                                                <button @click.stop="showCategoryDropdown = false; showCategoryManagerModal = true" class="w-full py-1.5 rounded bg-slate-700 hover:bg-slate-600 text-slate-300 text-xs font-bold transition flex items-center justify-center gap-2">
+                                                    <i class="ph-bold ph-gear"></i> Kategóriák kezelése
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <p class="text-[10px] text-slate-500 absolute bottom-3 left-3">Ctrl + Enter a mentéshez</p>
+                                </div>
+                                <button @click="processNoteInput" class="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-3 rounded-lg font-bold transition flex justify-center items-center gap-2 h-12 shrink-0">
+                                    <i class="ph-bold ph-plus"></i> Hozzáadás
+                                </button>
+                            </div>
+                        </div>
 
                     <div class="space-y-3">
                         <div v-for="note in sortedNotes" :key="note.id" class="glass p-4 rounded-xl relative group transition hover:bg-slate-800/40 border border-transparent" :class="{'border-indigo-500/30': note.type === 'todo'}">
@@ -919,9 +1029,16 @@
                             <!-- Szerkesztő mód -->
                             <div v-if="editingNoteId === note.id" class="pr-2 space-y-2">
                                 <textarea v-model="editingNoteContent" class="glass-input w-full p-2.5 rounded-lg text-sm text-slate-200 min-h-[60px]" @keyup.ctrl.enter="saveEditNote(note.id)"></textarea>
-                                <div class="flex justify-end gap-2">
-                                    <button @click="cancelEditNote" class="px-3 py-1 text-xs text-slate-400 hover:text-white rounded bg-slate-800 transition">Mégse</button>
-                                    <button @click="saveEditNote(note.id)" class="px-3 py-1 text-xs text-white bg-indigo-600 hover:bg-indigo-500 rounded font-bold transition">Mentés</button>
+                                <div class="flex items-center justify-between gap-2 mt-2">
+                                    <select v-model="editingNoteCategoryId" class="bg-slate-800 text-slate-300 border border-slate-600 rounded p-1.5 text-xs outline-none max-w-[150px]">
+                                        <option v-for="cat in allNoteCategories" :key="cat.id" :value="cat.id">{{ cat.icon }} {{ cat.name }}</option>
+                                    </select>
+                                    <div class="flex gap-2">
+                                        <button @click="cancelEditNote" class="px-3 py-1 text-xs text-slate-400 hover:text-white rounded bg-slate-800 transition">Mégse</button>
+                                        <button @click="saveEditNote(note.id)" class="px-3 py-1 text-xs text-white bg-indigo-600 hover:bg-indigo-500 rounded font-bold transition flex items-center gap-1">
+                                            <i class="ph-bold ph-check"></i> Mentés
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
 
@@ -948,7 +1065,7 @@
                                         <span v-if="note.source === 'savings'" class="inline-flex items-center gap-1 text-[10px] bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 px-1.5 py-0.2 rounded font-medium">
                                             <i class="ph-bold ph-vault text-[10px]"></i> Félretett pénz
                                         </span>
-                                        <span v-else-if="note.source === 'shared_payment'" class="inline-flex items-center gap-1 text-[10px] bg-sky-500/15 text-sky-300 border border-sky-500/30 px-1.5 py-0.2 rounded font-medium">
+                                        <span v-if="note.source === 'shared_payment'" class="inline-flex items-center gap-1 text-[10px] bg-sky-500/15 text-sky-300 border border-sky-500/30 px-1.5 py-0.2 rounded font-medium">
                                             <i class="ph-bold ph-users text-[10px]"></i> Megosztott pénzügyek
                                         </span>
                                     </div>
@@ -974,8 +1091,12 @@
                                     <span v-if="note.source === 'savings'" class="inline-flex items-center gap-1 text-[10px] bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 px-1.5 py-0.2 rounded font-medium">
                                         <i class="ph-bold ph-vault text-[10px]"></i> Félretett pénz
                                     </span>
-                                    <span v-else-if="note.source === 'shared_payment'" class="inline-flex items-center gap-1 text-[10px] bg-sky-500/15 text-sky-300 border border-sky-500/30 px-1.5 py-0.2 rounded font-medium">
+                                    <span v-if="note.source === 'shared_payment'" class="inline-flex items-center gap-1 text-[10px] bg-sky-500/15 text-sky-300 border border-sky-500/30 px-1.5 py-0.2 rounded font-medium">
                                         <i class="ph-bold ph-users text-[10px]"></i> Megosztott pénzügyek
+                                    </span>
+                                    <span class="inline-flex items-center gap-1 text-[10px] bg-slate-700/50 text-slate-400 border border-slate-600 px-1.5 py-0.2 rounded font-medium ml-1">
+                                        <span>{{ getCategoryDetails(note.categoryId || (note.source === 'savings' ? 'savings' : 'egyeb')).icon }}</span>
+                                        <span>{{ getCategoryDetails(note.categoryId || (note.source === 'savings' ? 'savings' : 'egyeb')).name }}</span>
                                     </span>
                                 </div>
                             </div>
@@ -2080,6 +2201,108 @@
         </transition>
 
         <transition name="modal">
+
+    <!-- V33: Kategória Kezelő Modál -->
+    <div v-if="showCategoryManagerModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-slate-950/80 backdrop-blur-sm" @click="showCategoryManagerModal = false"></div>
+        <div class="glass border border-slate-700 w-full max-w-md rounded-2xl shadow-2xl relative flex flex-col max-h-[90vh] animate-fade-in-up">
+            <div class="p-6 border-b border-slate-700 flex justify-between items-center">
+                <h3 class="text-xl font-bold text-white flex items-center gap-2">
+                    <i class="ph-duotone ph-list-dashes text-indigo-400"></i> Kategóriák kezelése
+                </h3>
+                <button @click="showCategoryManagerModal = false" class="text-slate-400 hover:text-white transition">
+                    <i class="ph-bold ph-x text-xl"></i>
+                </button>
+            </div>
+            
+            <div class="p-6 overflow-y-auto flex-1 custom-scrollbar space-y-6">
+                <div class="bg-slate-800/50 border border-slate-700 p-4 rounded-xl space-y-4">
+                    <h4 class="text-sm font-bold text-slate-300">{{ editingCategory.id ? 'Kategória szerkesztése' : 'Új kategória létrehozása' }}</h4>
+                    <div class="flex gap-3">
+                        <div class="w-20">
+                            <label class="block text-[10px] text-slate-400 uppercase font-bold mb-1">Ikon</label>
+                            <div class="flex items-center gap-1">
+                                <input v-model="editingCategory.icon" type="text" maxlength="2" class="glass-input w-11 p-2.5 rounded-lg text-center text-lg" placeholder="🍔">
+                                <button @click="showEmojiPicker = !showEmojiPicker" class="w-8 h-[44px] flex items-center justify-center bg-slate-800 hover:bg-slate-700 rounded-lg transition border border-slate-700 text-slate-400" title="Emoji választó">
+                                    <i class="ph-bold" :class="showEmojiPicker ? 'ph-caret-up' : 'ph-smiley'"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="flex-1">
+                            <label class="block text-[10px] text-slate-400 uppercase font-bold mb-1">Név</label>
+                            <input v-model="editingCategory.name" type="text" class="glass-input w-full p-2.5 rounded-lg text-sm" placeholder="Kategória neve...">
+                        </div>
+                        <div class="w-12">
+                            <label class="block text-[10px] text-slate-400 uppercase font-bold mb-1">Szín</label>
+                            <input v-model="editingCategory.color" type="color" class="w-full h-10 rounded cursor-pointer bg-transparent border-0 p-0 mt-0.5">
+                        </div>
+                    </div>
+                    
+                    <!-- V36: Emoji Picker Box -->
+                    <div v-if="showEmojiPicker" class="w-full bg-slate-900/90 border border-slate-700 rounded-lg p-2 h-48 overflow-y-auto custom-scrollbar flex flex-wrap gap-1 shadow-inner relative z-10">
+                        <button v-for="emoji in popularEmojis" :key="emoji" @click="editingCategory.icon = emoji; showEmojiPicker = false" class="w-8 h-8 flex items-center justify-center hover:bg-slate-700 rounded transition text-lg">
+                            {{ emoji }}
+                        </button>
+                    </div>
+
+                    <div class="flex justify-end gap-2 pt-2">
+                        <button v-if="editingCategory.id" @click="editingCategory = { id: null, icon: '📌', name: '', color: '#6366f1' }; showEmojiPicker = false" class="px-3 py-1.5 text-xs text-slate-400 hover:text-white bg-slate-800 rounded transition font-bold">Mégse</button>
+                        <button @click="saveCategory" class="px-4 py-1.5 text-xs text-white bg-indigo-600 hover:bg-indigo-500 rounded transition font-bold shadow-lg flex items-center gap-2">
+                            <i class="ph-bold ph-check"></i> Mentés
+                        </button>
+                    </div>
+                </div>
+
+                                <div class="space-y-4">
+                    <!-- Rendszer Kategóriák -->
+                    <div>
+                        <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Rendszer Kategóriák</h4>
+                        <div class="space-y-1">
+                            <div v-for="cat in allCategoriesList.filter(c => c.isSystem)" :key="cat.id" class="flex items-center justify-between p-2 bg-slate-800/80 rounded-lg border border-slate-700 hover:border-slate-600 transition">
+                                <div class="flex items-center gap-2">
+                                    <div class="w-3 h-3 rounded-full shadow-sm" :style="{ backgroundColor: cat.color }"></div>
+                                    <span class="text-base">{{ cat.icon }}</span>
+                                    <span class="font-medium text-slate-200 text-sm">{{ cat.name }}</span>
+                                </div>
+                                <div class="flex items-center gap-1">
+                                    <button @click="startEditCategory(cat)" class="p-1.5 text-slate-400 hover:text-indigo-400 hover:bg-slate-700 rounded transition" title="Szerkesztés">
+                                        <i class="ph-bold ph-pencil-simple"></i>
+                                    </button>
+                                    <button @click="deleteCategory(cat.id)" v-if="customCategories.find(c => c.id === cat.id)" class="p-1.5 text-slate-400 hover:text-orange-400 hover:bg-slate-700 rounded transition" title="Alaphelyzetbe állítás">
+                                        <i class="ph-bold ph-arrow-counter-clockwise"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Jegyzet Kategóriák -->
+                    <div>
+                        <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Jegyzet Kategóriák</h4>
+                        <div class="space-y-1 max-h-[30vh] overflow-y-auto custom-scrollbar pr-1">
+                            <div v-for="cat in allCategoriesList.filter(c => !c.isSystem)" :key="cat.id" class="flex items-center justify-between p-2 bg-slate-800/80 rounded-lg border border-slate-700 hover:border-slate-600 transition">
+                                <div class="flex items-center gap-2">
+                                    <div class="w-3 h-3 rounded-full shadow-sm" :style="{ backgroundColor: cat.color }"></div>
+                                    <span class="text-base">{{ cat.icon }}</span>
+                                    <span class="font-medium text-slate-200 text-sm">{{ cat.name }}</span>
+                                </div>
+                                <div class="flex items-center gap-1">
+                                    <button @click="startEditCategory(cat)" class="p-1.5 text-slate-400 hover:text-indigo-400 hover:bg-slate-700 rounded transition" title="Szerkesztés">
+                                        <i class="ph-bold ph-pencil-simple"></i>
+                                    </button>
+                                    <button @click="deleteCategory(cat.id)" v-if="cat.isCustom || customCategories.find(c => c.id === cat.id)" class="p-1.5 text-slate-400 hover:text-red-400 hover:bg-slate-700 rounded transition" :title="cat.isCustom ? 'Törlés' : 'Alaphelyzetbe állítás'">
+                                        <i class="ph-bold" :class="cat.isCustom ? 'ph-trash' : 'ph-arrow-counter-clockwise'"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</transition>
+        <transition name="modal">
             <div v-if="showSettingsModal" class="fixed inset-0 z-[100] flex items-center justify-center p-4">
                 <div class="absolute inset-0 bg-slate-900/80 backdrop-blur-sm" @click="showSettingsModal = false"></div>
                 <div class="glass modal-content w-full max-w-md rounded-2xl p-6 relative z-10 shadow-2xl border border-indigo-500/30 max-h-[90vh] overflow-y-auto">
@@ -2476,6 +2699,9 @@
             const bills = ref([]);
             const allInstallments = ref([]);
             const notes = ref([]);
+            const customCategories = ref([]);
+            const showCategoryManagerModal = ref(false);
+            const editingCategory = ref({ id: null, icon: '📌', name: '', color: '#6366f1' });
             const newNoteContent = ref('');
 
             // --- V18: Félretett pénz / Vésztartalék állapot ---
@@ -2714,6 +2940,7 @@
                             installmentId: data.instId,
                             monthIndex: data.monthIndex,
                             targetMonthKey: data.targetMonthKey,
+                            categoryId: 'vasarlas',
                             createdAt: serverTimestamp()
                         });
                         linkedNoteId = noteDocRef.id;
@@ -3229,7 +3456,11 @@
             const logout = () => signOut(auth);
 
             const initData = (uid) => {
-                onSnapshot(query(collection(db, `users/${uid}/providers`)), (snap) => {
+                onSnapshot(query(collection(db, `users/${uid}/categories`)), (snap) => {
+                        customCategories.value = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    });
+
+                    onSnapshot(query(collection(db, `users/${uid}/providers`)), (snap) => {
                     providers.value = snap.docs.map(d => ({ id: d.id, ...d.data() }));
                 });
                 onSnapshot(query(collection(db, `users/${uid}/installments`)), (snap) => {
@@ -3919,7 +4150,7 @@
                 }
             };
             const grandTotalRemaining = computed(() => activeInstallments.value.reduce((sum, i) => sum + i.remainingTotal, 0));
-            const totalInstallments = computed(() => activeInstallments.value.reduce((sum, i) => sum + i.monthlyAmount, 0));
+            const totalInstallments = computed(() => activeInstallments.value.reduce((sum, i) => sum + i.currentMonthAmount, 0));
             const totalBills = computed(() => bills.value.reduce((sum, b) => sum + b.amount, 0));
             const totalObligations = computed(() => totalBills.value + totalInstallments.value);
             const baseRemainingMoney = computed(() => (monthlyIncome.value - notesStats.value.income) - totalObligations.value);
@@ -4070,6 +4301,229 @@
             };
             const deleteInstallment = async (id) => { if(confirm('Törlöd a részletfizetést végleg?')) await deleteDoc(doc(db, `users/${user.value.uid}/installments`, id)); };
 
+            // --- V35: Tervezés Kategóriák state ---
+            const defaultCategories = [
+                // Rendszer kategóriák
+                { id: 'free', icon: '✨', name: 'Szabadon elkölthető', color: '#34d399', isSystem: true },
+                { id: 'bills', icon: '🧾', name: 'Számlák (Kötelező)', color: '#fb923c', isSystem: true },
+                { id: 'installments', icon: '🛍️', name: 'Részletek', color: '#f43f5e', isSystem: true },
+                { id: 'savings', icon: '🏦', name: 'Félretett pénz', color: '#818cf8', isSystem: true },
+                
+                // Jegyzet kategóriák
+                { id: 'lakhatas', icon: '🏠', name: 'Lakhatás', color: '#fca5a5' },
+                { id: 'rezsi', icon: '⚡', name: 'Rezsi & Számlák', color: '#fde047' },
+                { id: 'elelmiszer', icon: '🍔', name: 'Élelmiszer', color: '#86efac' },
+                { id: 'etterem', icon: '🍕', name: 'Éttermek & Rendelés', color: '#fdba74' },
+                { id: 'kozlekedes', icon: '🚗', name: 'Közlekedés', color: '#93c5fd' },
+                { id: 'vasarlas', icon: '🛒', name: 'Vásárlás', color: '#c4b5fd' },
+                { id: 'szorakozas', icon: '🎮', name: 'Szórakozás', color: '#d8b4fe' },
+                { id: 'elofizetes', icon: '📺', name: 'Előfizetések', color: '#67e8f9' },
+                { id: 'egeszseg', icon: '💖', name: 'Egészség & Szépség', color: '#f9a8d4' },
+                { id: 'sport', icon: '🏋️', name: 'Sport & Fitness', color: '#cbd5e1' },
+                { id: 'utazas', icon: '✈️', name: 'Utazás', color: '#7dd3fc' },
+                { id: 'ajandek', icon: '🎁', name: 'Ajándékok & Adományok', color: '#fef08a' },
+                { id: 'penzugyek', icon: '💳', name: 'Pénzügyek', color: '#a7f3d0' },
+                { id: 'oktatas', icon: '📚', name: 'Oktatás', color: '#bae6fd' },
+                { id: 'haziallat', icon: '🐶', name: 'Háziállat', color: '#fed7aa' },
+                { id: 'otthon', icon: '🏡', name: 'Otthon & Háztartás', color: '#fecaca' },
+                { id: 'egyeb', icon: '📦', name: 'Egyéb', color: '#94a3b8' }
+            ];
+
+            const allCategoriesMap = computed(() => {
+                const map = new Map();
+                defaultCategories.forEach(c => map.set(c.id, { ...c }));
+                
+                customCategories.value.forEach(c => {
+                    if (map.has(c.id)) {
+                        map.set(c.id, { ...map.get(c.id), ...c });
+                    } else {
+                        map.set(c.id, { ...c, isCustom: true });
+                    }
+                });
+                return map;
+            });
+            
+            const allCategoriesList = computed(() => Array.from(allCategoriesMap.value.values()));
+
+            const allNoteCategories = computed(() => {
+                return allCategoriesList.value.filter(c => !c.isSystem);
+            });
+
+            const selectedNoteCategory = ref('egyeb');
+            const showCategoryDropdown = ref(false);
+            const categorySearch = ref('');
+
+            const filteredNoteCategories = computed(() => {
+                if (!categorySearch.value) return allNoteCategories.value;
+                const lower = categorySearch.value.toLowerCase();
+                return allNoteCategories.value.filter(c => c.name.toLowerCase().includes(lower));
+            });
+            
+            const getCategoryDetails = (id) => {
+                return allCategoriesMap.value.get(id) || allCategoriesMap.value.get('egyeb');
+            };
+
+            const saveCategory = async () => {
+                if (!editingCategory.value.name || !editingCategory.value.icon) {
+                    alert("Kérlek adj meg egy ikont és egy nevet!");
+                    return;
+                }
+                try {
+                    const payload = {
+                        name: editingCategory.value.name,
+                        icon: editingCategory.value.icon,
+                        color: editingCategory.value.color
+                    };
+                    if (editingCategory.value.id) {
+                        await setDoc(doc(db, `users/${user.value.uid}/categories`, editingCategory.value.id), payload, { merge: true });
+                    } else {
+                        payload.createdAt = serverTimestamp();
+                        await addDoc(collection(db, `users/${user.value.uid}/categories`), payload);
+                    }
+                    editingCategory.value = { id: null, icon: '📌', name: '', color: '#6366f1' };
+                    showEmojiPicker.value = false;
+                } catch (e) {
+                    alert("Hiba: " + e.message);
+                }
+            };
+
+            const deleteCategory = async (id) => {
+                const isBuiltin = defaultCategories.some(c => c.id === id);
+                if (isBuiltin) {
+                    if (confirm('Biztosan törlöd a módosításokat? Ezzel visszaáll az alapértelmezett állapot.')) {
+                        try {
+                            await deleteDoc(doc(db, `users/${user.value.uid}/categories`, id));
+                        } catch(e) { alert(e.message); }
+                    }
+                } else {
+                    if (confirm('Biztosan törlöd ezt az egyedi kategóriát? A kapcsolódó jegyzetek automatikusan az "Egyéb" kategóriába kerülnek.')) {
+                        try {
+                            await deleteDoc(doc(db, `users/${user.value.uid}/categories`, id));
+                        } catch (e) {
+                            alert("Hiba: " + e.message);
+                        }
+                    }
+                }
+            };
+            
+            const startEditCategory = (cat) => {
+                editingCategory.value = { ...cat };
+                showEmojiPicker.value = false;
+            };
+
+            const showEmojiPicker = ref(false);
+            const popularEmojis = [
+                '😀','😃','😄','😁','😅','😂','🤣','😊','😇','🙂','🙃','😉','😌','😍','🥰','😘','😋','😛','🤪','🤓','😎','🤩','🥳','😏','😒','😞','😔','😟','😕','🙁','😣','😖','😫','😩','🥺','😢','😭','😤','😠','😡','🤬','🤯','😳','🥵','🥶','😱','😨','😰','😥','😓','🤗','🤔','🤭','🤫','🤥','😶','😐','😑','😬','🙄','😯','😦','😧','😮','😲','🥱','😴','🤤','😪','😵','🤐','🥴','🤢','🤮','🤧','😷','🤒','🤕','🤑','🤠','😈','👿','👹','👺','🤡','💩','👻','💀','👽','👾','🤖','🎃','😺','😸','😹','😻','😼','😽','🙀','😿','😾',
+                '👋','🤚','🖐','✋','🖖','👌','🤏','✌️','🤞','🤟','🤘','🤙','👈','👉','👆','🖕','👇','☝️','👍','👎','✊','👊','🤛','🤜','👏','🙌','👐','🤲','🤝','🙏','✍️','💪','🦵','🦶','👂','🦻','👃','🧠','🦷','🦴','👀','👁','👅','👄',
+                '🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼','🐨','🐯','🦁','🐮','🐷','🐽','🐸','🐵','🐒','🐔','🐧','🐦','🐤','🐣','🐥','🦆','🦅','🦉','🦇','🐺','🐗','🐴','🦄','🐝','🐛','🦋','🐌','🐞','🐜','🦟','🦗','🕷','🕸','🦂','🐢','🐍','🦎','🦖','🦕','🐙','🦑','🦐','🦞','🦀','🐡','🐠','🐟','🐬','🐳','🐋','🦈','🐊','🐅','🐆','🦓','🦍','🦧','🐘','🦛','🦏','🐪','🐫','🦒','🦘','🐃','🐂','🐄','🐎','🐖','🐏','🐑','🦙','🐐','🦌','🐕','🐩','🦮','🐕‍🦺','🐈','🐓','🦃','🦚','🦜','🦢','🦩','🕊','🐇','🦝','🦨','🦡','🦦','🦥','🐁','🐀','🐿','🦔','🐉','🐲','🌵','🎄','🌲','🌳','🌴','🌱','🌿','☘️','🍀','🎍','🎋','🍃','🍂','🍁','🍄','🌾','💐','🌷','🌹','🥀','🌺','🌸','🌼','🌻','🌞','🌝','🌛','🌜','🌚','🌕','🌖','🌗','🌘','🌑','🌒','🌓','🌔','🌙','🌎','🌍','🌏','🪐','💫','⭐️','🌟','✨','⚡️','☄️','💥','🔥','🌪','🌈','☀️','🌤','⛅️','🌥','☁️','🌦','🌧','⛈','🌩','🌨','❄️','☃️','⛄️','🌬','💨','💧','💦','☔️','☂️','🌊',
+                '🍏','🍎','🍐','🍊','🍋','🍌','🍉','🍇','🍓','🍈','🍒','🍑','🥭','🍍','🥥','🥝','🍅','🍆','🥑','🥦','🥬','🥒','🌶','🌽','🥕','🧄','🧅','🥔','🍠','🥐','🥯','🍞','🥖','🥨','🧀','🥚','🍳','🧈','🥞','🧇','🥓','🥩','🍗','🍖','🌭','🍔','🍟','🍕','🥪','🥙','🧆','🌮','🌯','🥗','🥘','🥫','🍝','🍜','🍲','🍛','🍣','🍱','🥟','🦪','🍤','🍙','🍚','🍘','🍥','🥠','🥮','🍢','🍡','🍧','🍨','🍦','🥧','🧁','🍰','🎂','🍮','🍭','🍬','🍫','🍿','🍩','🍪','🌰','🥜','🍯','🥛','🍼','☕️','🍵','🧃','🥤','🍶','🍺','🍻','🥂','🍷','🥃','🍸','🍹','🧉','🍾','🧊','🥄','🍴','🍽','🥣','🥡','🥢','🧂',
+                '💰','💳','💎','⚖️','🛒','🛍','🎁','🎈','🎊','🎉','🎀','🏆','🏅','🎮','🎲','🎸','📻','📱','💻','🖥','🖨','⌨️','🖱','💽','💾','💿','📀','📷','📸','📹','🎥','📽','📺','📻','🎙','🎚','🎛','🧭','⏱','⏲','⏰','🕰','⌛️','⏳','📡','🔋','🔌','💡','🔦','🕯','🧯','🗑','🛢','💸','💵','💴','💶','💷','🪙','🧾','📉','📈','📊','📋','📁','📂','🗂','🗞','📰','📓','📔','📒','📕','📗','📘','📙','📚','📖','🔖','🧷','🔗','📎','🖇','📐','📏','🧮','📌','📍','✂️','🖊','🖋','✒️','🖌','🖍','📝','✏️','🔍','🔎','🔏','🔐','🔒','🔓'
+            ];
+
+            const hoveredSlice = ref(null);
+
+            const expensesByCategory = computed(() => {
+                const totals = {};
+                let noteExpensesTotal = 0;
+
+                allCategoriesList.value.forEach(c => totals[c.id] = { ...c, amount: 0 });
+
+                sortedNotes.value.forEach(note => {
+                    if (note.type === 'todo' && !note.isDone) return;
+                    
+                    const amounts = getNoteAmounts(note.content);
+                    let noteExpense = 0;
+                    amounts.forEach(amt => {
+                        if (amt < 0) noteExpense += Math.abs(amt);
+                    });
+                    
+                    if (noteExpense > 0) {
+                        const catId = note.categoryId || (note.source === 'savings' ? 'savings' : 'egyeb');
+                        if (totals[catId]) {
+                            totals[catId].amount += noteExpense;
+                            noteExpensesTotal += noteExpense;
+                        }
+                    }
+                });
+
+                const catResults = Object.values(totals)
+                    .filter(t => t.amount > 0 && !['free', 'bills', 'installments'].includes(t.id))
+                    .sort((a, b) => b.amount - a.amount);
+                
+                const billsAmt = totalBills.value;
+                const instAmt = totalInstallments.value;
+                let freeMoney = Math.max(0, remainingMoney.value);
+
+                const slices = [];
+                
+                if (freeMoney > 0) {
+                    const freeCat = allCategoriesMap.value.get('free');
+                    slices.push({ id: 'free', name: freeCat.name, icon: freeCat.icon, color: freeCat.color, amount: freeMoney });
+                }
+                if (billsAmt > 0) {
+                    const billsCat = allCategoriesMap.value.get('bills');
+                    slices.push({ id: 'bills', name: billsCat.name, icon: billsCat.icon, color: billsCat.color, amount: billsAmt });
+                }
+                if (instAmt > 0) {
+                    const instCat = allCategoriesMap.value.get('installments');
+                    slices.push({ id: 'installments', name: instCat.name, icon: instCat.icon, color: instCat.color, amount: instAmt });
+                }
+                
+                catResults.forEach(c => slices.push(c));
+
+                const chartTotal = slices.reduce((sum, slice) => sum + slice.amount, 0);
+
+                slices.forEach(r => {
+                    r.percentage = chartTotal > 0 ? ((r.amount / chartTotal) * 100).toFixed(1) : 0;
+                });
+
+                return {
+                    total: chartTotal,
+                    categories: slices
+                };
+            });
+
+            // V37: SVG Pie Chart Logic
+            const svgPieSlices = computed(() => {
+                const cats = expensesByCategory.value.categories;
+                let cumulativePercent = 0;
+                
+                return cats.map(cat => {
+                    const pct = parseFloat(cat.percentage) / 100;
+                    const safePct = pct >= 1 ? 0.9999 : pct;
+
+                    const startPercent = cumulativePercent;
+                    const endPercent = cumulativePercent + safePct;
+                    
+                    const startX = Math.cos(2 * Math.PI * startPercent);
+                    const startY = Math.sin(2 * Math.PI * startPercent);
+                    const endX = Math.cos(2 * Math.PI * endPercent);
+                    const endY = Math.sin(2 * Math.PI * endPercent);
+                    
+                    const largeArcFlag = safePct > 0.5 ? 1 : 0;
+                    const pathData = [
+                        `M 50 50`,
+                        `L ${50 + startX * 50} ${50 + startY * 50}`,
+                        `A 50 50 0 ${largeArcFlag} 1 ${50 + endX * 50} ${50 + endY * 50}`,
+                        `Z`
+                    ].join(' ');
+                    
+                    const midPercent = startPercent + safePct / 2;
+                    const textX = 50 + Math.cos(2 * Math.PI * midPercent) * 35;
+                    const textY = 50 + Math.sin(2 * Math.PI * midPercent) * 35;
+                    
+                    cumulativePercent += pct;
+                    
+                    return {
+                        ...cat,
+                        pathData,
+                        textX,
+                        textY,
+                        showText: safePct > 0.04
+                    };
+                });
+            });
+
             const processNoteInput = async () => {
                 const rawText = newNoteContent.value.trim();
                 if(!rawText) return;
@@ -4087,10 +4541,12 @@
                     type: type,
                     isDone: isDone,
                     monthKey: currentMonthKey.value,
+                    categoryId: selectedNoteCategory.value,
                     createdAt: serverTimestamp()
                 });
 
                 newNoteContent.value = '';
+                selectedNoteCategory.value = 'egyeb';
             };
 
             // V31: Kétirányú szinkronizáció - Tervezés -> Áttekintés
@@ -4494,28 +4950,32 @@
             // Jegyzet szerkesztési funkciók
             const editingNoteId = ref(null);
             const editingNoteContent = ref('');
+            const editingNoteCategoryId = ref('egyeb');
 
             const startEditNote = (note) => {
                 editingNoteId.value = note.id;
                 editingNoteContent.value = note.content;
+                editingNoteCategoryId.value = note.categoryId || 'egyeb';
             };
 
             const cancelEditNote = () => {
                 editingNoteId.value = null;
                 editingNoteContent.value = '';
+                editingNoteCategoryId.value = 'egyeb';
             };
 
             const saveEditNote = async (id) => {
-                const text = editingNoteContent.value.trim();
-                if (!text) return;
+                if (!editingNoteContent.value.trim()) return;
                 try {
                     await updateDoc(doc(db, `users/${user.value.uid}/notes`, id), {
-                        content: text
+                        content: editingNoteContent.value.trim(),
+                        categoryId: editingNoteCategoryId.value
                     });
                     editingNoteId.value = null;
                     editingNoteContent.value = '';
-                } catch (e) {
-                    alert('Hiba mentéskor: ' + e.message);
+                } catch (error) {
+                    console.error("Hiba a jegyzet módosításakor: ", error);
+                    alert("Nem sikerült módosítani a jegyzetet.");
                 }
             };
 
@@ -4779,6 +5239,7 @@
                             isDone: false,
                             monthKey: targetMonthKey,
                             source: 'savings',
+                            categoryId: 'savings',
                             createdAt: serverTimestamp()
                         });
                         linkedNoteId = noteDocRef.id;
@@ -5145,7 +5606,8 @@
                 showDeleteModal, deleteModalData, deleteReason, confirmDeletePayment, confirmDeleteShared, executeDeletion, restoreSharedItem, formatDateTime, updateSharedChart,
 
                 sortedNotes, newNoteContent, processNoteInput, toggleTodo, deleteNote,
-                editingNoteId, editingNoteContent, startEditNote, cancelEditNote, saveEditNote,
+allNoteCategories, customCategories, showCategoryManagerModal, editingCategory, saveCategory, deleteCategory, startEditCategory, selectedNoteCategory, showCategoryDropdown, categorySearch, filteredNoteCategories, getCategoryDetails, expensesByCategory,
+                hoveredSlice, svgPieSlices, showEmojiPicker, popularEmojis, allCategoriesList, editingNoteId, editingNoteContent, editingNoteCategoryId, startEditNote, cancelEditNote, saveEditNote,
                 getNoteAmounts, notesStats, baseRemainingMoney,
                 paydayDisplay, dailyBudget,
                 
