@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Money manager v39 | Napi Kerettel</title>
+    <title>Money manager v40 | Napi Kerettel</title>
 
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -72,7 +72,7 @@
             <div class="p-6 border-b border-slate-700/50">
                 <div class="flex items-center justify-between">
                     <h2 class="text-xl font-bold text-white">Money<span class="text-indigo-500"> manager</span></h2>
-                    <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-bold">v39</span>
+                    <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-bold">v40</span>
                 </div>
                 <p class="text-xs text-slate-500 mt-1">{{ user.email }}</p>
             </div>
@@ -108,7 +108,7 @@
         <div class="md:hidden fixed top-0 w-full glass z-50 p-4 flex justify-between items-center">
             <div class="flex items-center gap-2">
                 <span class="font-bold text-lg">Money manager</span>
-                <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-bold">v39</span>
+                <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-bold">v40</span>
             </div>
             <div class="flex gap-3 items-center">
                 <button @click="currentView = 'dashboard'" :class="currentView === 'dashboard' ? 'text-indigo-400' : 'text-slate-400'" title="Áttekintés"><i class="ph-bold ph-chart-pie-slice text-2xl"></i></button>
@@ -990,7 +990,7 @@
                                             <div class="max-h-60 overflow-y-auto custom-scrollbar p-1">
                                                 <div v-if="filteredNoteCategories.length === 0" class="text-center text-xs text-slate-500 py-4">Nincs találat</div>
                                                 <button v-for="cat in filteredNoteCategories" :key="cat.id" 
-                                                        @click="selectedNoteCategory = cat.id; showCategoryDropdown = false; categorySearch = ''"
+                                                        @click="selectManualCategory(cat.id)"
                                                         class="w-full text-left flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-700 transition text-sm text-slate-300"
                                                         :class="{ 'bg-indigo-600/20 text-indigo-300': selectedNoteCategory === cat.id }">
                                                     <span class="text-base">{{ cat.icon }}</span>
@@ -2233,12 +2233,15 @@
                             <input v-model="editingCategory.name" type="text" class="glass-input w-full p-2.5 rounded-lg text-sm" placeholder="Kategória neve...">
                         </div>
                         <div class="w-12">
-                            <label class="block text-[10px] text-slate-400 uppercase font-bold mb-1">Szín</label>
-                            <input v-model="editingCategory.color" type="color" class="w-full h-10 rounded cursor-pointer bg-transparent border-0 p-0 mt-0.5">
-                        </div>
-                    </div>
-                    
-                    <!-- V36: Emoji Picker Box -->
+                                    <label class="block text-[10px] text-slate-400 uppercase font-bold mb-1">Szín</label>
+                                    <input v-model="editingCategory.color" type="color" class="w-full h-10 rounded cursor-pointer bg-transparent border-0 p-0 mt-0.5">
+                                </div>
+                            </div>
+                            <div class="mt-3">
+                                <label class="block text-[10px] text-slate-400 uppercase font-bold mb-1">Kulcsszavak (vesszővel elválasztva)</label>
+                                <input v-model="editingCategory.keywords" type="text" class="glass-input w-full p-2.5 rounded-lg text-sm" placeholder="pl. tesco, netflix, kávé...">
+                            </div>
+                            <!-- V36: Emoji Picker Box -->
                     <div v-if="showEmojiPicker" class="w-full bg-slate-900/90 border border-slate-700 rounded-lg p-2 h-48 overflow-y-auto custom-scrollbar flex flex-wrap gap-1 shadow-inner relative z-10">
                         <button v-for="emoji in popularEmojis" :key="emoji" @click="editingCategory.icon = emoji; showEmojiPicker = false" class="w-8 h-8 flex items-center justify-center hover:bg-slate-700 rounded transition text-lg">
                             {{ emoji }}
@@ -2701,7 +2704,7 @@
             const notes = ref([]);
             const customCategories = ref([]);
             const showCategoryManagerModal = ref(false);
-            const editingCategory = ref({ id: null, icon: '📌', name: '', color: '#6366f1' });
+            const editingCategory = ref({ id: null, icon: '📌', name: '', color: '#6366f1', keywords: '' });
             const newNoteContent = ref('');
 
             // --- V18: Félretett pénz / Vésztartalék állapot ---
@@ -4350,6 +4353,35 @@
             });
 
             const selectedNoteCategory = ref('egyeb');
+            const userManuallySelectedCategory = ref(false);
+
+            const selectManualCategory = (catId) => {
+                selectedNoteCategory.value = catId;
+                userManuallySelectedCategory.value = true;
+                showCategoryDropdown.value = false;
+                categorySearch.value = '';
+            };
+
+            watch(newNoteContent, (newVal) => {
+                if (userManuallySelectedCategory.value) return;
+                const lowerContent = newVal.toLowerCase();
+                let found = false;
+                
+                for (const cat of allCategoriesList.value) {
+                    if (cat.keywords) {
+                        const kws = cat.keywords.split(',').map(k => k.trim().toLowerCase()).filter(k => k);
+                        if (kws.some(kw => lowerContent.includes(kw))) {
+                            selectedNoteCategory.value = cat.id;
+                            found = true;
+                            break;
+                        }
+                    }
+                }
+                
+                if (!found && selectedNoteCategory.value !== 'egyeb') {
+                    selectedNoteCategory.value = 'egyeb';
+                }
+            });
             const showCategoryDropdown = ref(false);
             const categorySearch = ref('');
 
@@ -4372,7 +4404,8 @@
                     const payload = {
                         name: editingCategory.value.name,
                         icon: editingCategory.value.icon,
-                        color: editingCategory.value.color
+                        color: editingCategory.value.color,
+                        keywords: editingCategory.value.keywords || ''
                     };
                     if (editingCategory.value.id) {
                         await setDoc(doc(db, `users/${user.value.uid}/categories`, editingCategory.value.id), payload, { merge: true });
@@ -4380,7 +4413,7 @@
                         payload.createdAt = serverTimestamp();
                         await addDoc(collection(db, `users/${user.value.uid}/categories`), payload);
                     }
-                    editingCategory.value = { id: null, icon: '📌', name: '', color: '#6366f1' };
+                    editingCategory.value = { id: null, icon: '📌', name: '', color: '#6366f1', keywords: '' };
                     showEmojiPicker.value = false;
                 } catch (e) {
                     alert("Hiba: " + e.message);
@@ -4407,7 +4440,7 @@
             };
             
             const startEditCategory = (cat) => {
-                editingCategory.value = { ...cat };
+                editingCategory.value = { ...cat, keywords: cat.keywords || '' };
                 showEmojiPicker.value = false;
             };
 
@@ -4547,6 +4580,7 @@
 
                 newNoteContent.value = '';
                 selectedNoteCategory.value = 'egyeb';
+                userManuallySelectedCategory.value = false;
             };
 
             // V31: Kétirányú szinkronizáció - Tervezés -> Áttekintés
@@ -5606,7 +5640,7 @@
                 showDeleteModal, deleteModalData, deleteReason, confirmDeletePayment, confirmDeleteShared, executeDeletion, restoreSharedItem, formatDateTime, updateSharedChart,
 
                 sortedNotes, newNoteContent, processNoteInput, toggleTodo, deleteNote,
-allNoteCategories, customCategories, showCategoryManagerModal, editingCategory, saveCategory, deleteCategory, startEditCategory, selectedNoteCategory, showCategoryDropdown, categorySearch, filteredNoteCategories, getCategoryDetails, expensesByCategory,
+allNoteCategories, customCategories, showCategoryManagerModal, editingCategory, saveCategory, deleteCategory, startEditCategory, selectedNoteCategory, showCategoryDropdown, categorySearch, filteredNoteCategories, getCategoryDetails, expensesByCategory, selectManualCategory,
                 hoveredSlice, svgPieSlices, showEmojiPicker, popularEmojis, allCategoriesList, editingNoteId, editingNoteContent, editingNoteCategoryId, startEditNote, cancelEditNote, saveEditNote,
                 getNoteAmounts, notesStats, baseRemainingMoney,
                 paydayDisplay, dailyBudget,
