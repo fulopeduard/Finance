@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Money manager V46</title>
+    <title>Money manager V48</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💵</text></svg>">
 
     <script src="https://cdn.tailwindcss.com"></script>
@@ -210,7 +210,7 @@
             <div class="p-6 border-b border-slate-700/50">
                 <div class="flex items-center justify-between">
                     <h2 class="text-xl font-bold text-white">Money<span class="text-indigo-500"> manager</span></h2>
-                    <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-bold">v46</span>
+                    <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-bold">v48</span>
                 </div>
                 <p class="text-xs text-slate-500 mt-1">{{ user.email }}</p>
             </div>
@@ -246,7 +246,7 @@
         <div class="md:hidden fixed top-0 w-full glass z-50 p-4 flex justify-between items-center">
             <div class="flex items-center gap-2">
                 <span class="font-bold text-lg">Money manager</span>
-                <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-bold">v46</span>
+                <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-bold">v48</span>
             </div>
             <div class="flex gap-3 items-center">
                 <button @click="currentView = 'dashboard'" :class="currentView === 'dashboard' ? 'text-indigo-400' : 'text-slate-400'" title="Áttekintés"><i class="ph-bold ph-chart-pie-slice text-2xl"></i></button>
@@ -335,42 +335,27 @@
 
                 <div v-if="currentView === 'dashboard'" class="space-y-6 animate-fade-in">
 
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div class="md:col-span-2 glass p-6 rounded-xl relative">
-                            <h3 class="text-sm font-semibold text-slate-400 mb-4">Kiadások eloszlása (Számlák + Részletek)</h3>
-                            <div class="h-64">
-                                <canvas id="expenseChart"></canvas>
-                            </div>
-                        </div>
-
-                        <div class="glass p-6 rounded-xl flex flex-col justify-center space-y-6">
+                    <div class="glass p-6 rounded-xl relative">
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                             <div>
-                                <p class="text-slate-400 text-xs uppercase tracking-wider">Teljes kötelezettség</p>
-                                <p class="text-3xl font-bold text-white mt-1">{{ formatCurrency(totalObligations) }}</p>
-
-                                <div class="mt-2 text-sm text-orange-400 flex items-center gap-2 bg-orange-500/10 p-2 rounded border border-orange-500/20" v-if="totalInstallments > 0">
-                                    <i class="ph-fill ph-warning-circle"></i>
-                                    <span>Ebből részlet: <b>{{ formatCurrency(totalInstallments) }}</b></span>
-                                </div>
-
-                                <div class="w-full bg-slate-700 h-1.5 rounded-full mt-3 overflow-hidden">
-                                    <div class="h-full bg-indigo-500" :style="{ width: Math.min(billsPercentage, 100) + '%' }"></div>
-                                </div>
-                                <p class="text-xs text-indigo-300 mt-1">{{ billsPercentage }}% a keretből</p>
-                            </div>
-
-                            <div>
-                                <p class="text-slate-400 text-xs uppercase tracking-wider">Szabadon elkölthető</p>
-                                <p class="text-3xl font-bold mt-1" :class="remainingMoney >= 0 ? 'text-emerald-400' : 'text-red-400'">
-                                    {{ formatCurrency(remainingMoney) }}
-                                </p>
-                                <div v-if="notesStats.net !== 0" class="mt-1 text-xs text-slate-400 flex flex-wrap items-center gap-1">
-                                    <span>Alap: {{ formatCurrency(baseRemainingMoney) }}</span>
-                                    <span :class="notesStats.net > 0 ? 'text-emerald-400' : 'text-rose-400'" class="font-medium">
-                                        ({{ notesStats.net > 0 ? '+' : '' }}{{ formatCurrency(notesStats.net) }} jegyzetekből)
+                                <h3 class="text-sm font-semibold text-slate-400">Kiadások eloszlása (Számlák + Részletek)</h3>
+                                <div class="flex items-baseline gap-3 mt-1.5 flex-wrap">
+                                    <span class="text-2xl font-bold text-white tracking-tight">{{ formatCurrency(totalObligations) }}</span>
+                                    <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                                        {{ billsPercentage }}% a keretből
+                                    </span>
+                                    <span v-if="totalInstallments > 0" class="text-xs text-orange-400 flex items-center gap-1.5 bg-orange-500/10 px-2.5 py-1 rounded-full border border-orange-500/20 font-medium">
+                                        <i class="ph-fill ph-warning-circle"></i>
+                                        Ebből részlet: <b>{{ formatCurrency(totalInstallments) }}</b>
                                     </span>
                                 </div>
                             </div>
+                            <div class="w-full sm:w-48 bg-slate-700/60 h-2 rounded-full overflow-hidden">
+                                <div class="h-full bg-indigo-500 rounded-full transition-all duration-500" :style="{ width: Math.min(billsPercentage, 100) + '%' }"></div>
+                            </div>
+                        </div>
+                        <div class="h-64">
+                            <canvas id="expenseChart"></canvas>
                         </div>
                     </div>
 
@@ -409,106 +394,36 @@
                     <div class="glass glass-orange p-6 rounded-xl relative overflow-hidden">
                         <div class="absolute top-0 right-0 w-32 h-32 bg-orange-500/10 rounded-full blur-3xl -z-10"></div>
 
-                        <h3 class="text-lg font-bold text-white mb-6 flex items-center gap-2 text-orange-400">
-                            <i class="ph-duotone ph-calendar-check"></i> Részletek fizetése
-                        </h3>
+                        <!-- Fejléc: Részletek fizetése, kompakt összesítő és "+" gomb -->
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                            <h3 class="text-lg font-bold text-white flex items-center gap-2 text-orange-400 shrink-0">
+                                <i class="ph-duotone ph-calendar-check"></i> Részletek fizetése
+                            </h3>
 
-                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                            <!-- Új részletfizetés felvétele űrlap -->
-                            <div class="glass p-4 rounded-lg bg-slate-800/40 border-slate-700">
-                                <h4 class="text-xs font-bold text-slate-400 uppercase mb-4 flex items-center gap-1.5">
-                                    <i class="ph-bold ph-plus-circle text-orange-400"></i> Új törlesztő felvétele
-                                </h4>
-                                <div class="space-y-3">
-                                    <div>
-                                        <label class="text-[10px] uppercase text-slate-500 font-bold">Megnevezés</label>
-                                        <input v-model="newInstallment.name" placeholder="pl. Hűtőgép, TV, Laptop" class="glass-input input-orange w-full p-2 rounded text-sm mt-1">
-                                    </div>
-                                    <div class="grid grid-cols-2 gap-3">
-                                        <div>
-                                            <label class="text-[10px] uppercase text-slate-500 font-bold">Teljes összeg</label>
-                                            <input v-model.number="newInstallment.totalAmount" type="number" placeholder="pl. 1000" class="glass-input input-orange w-full p-2 rounded text-sm mt-1">
-                                        </div>
-                                        <div>
-                                            <label class="text-[10px] uppercase text-slate-500 font-bold">Futamidő (hó)</label>
-                                            <input v-model.number="newInstallment.months" type="number" min="1" max="60" placeholder="pl. 4" class="glass-input input-orange w-full p-2 rounded text-sm mt-1">
-                                        </div>
-                                    </div>
-
-                                    <div>
-                                        <label class="text-[10px] uppercase text-slate-500 font-bold">Részlet típusa</label>
-                                        <select v-model="newInstallment.type" class="glass-input input-orange w-full p-2 rounded text-sm mt-1 bg-slate-900 text-white cursor-pointer">
-                                            <option value="equal">Egyenlő részletekből áll</option>
-                                            <option value="first_different">Első részlet különbözik</option>
-                                            <option value="custom">Változó részletek (egyéni)</option>
-                                        </select>
-                                    </div>
-
-                                    <!-- 1. Egyenlő részletek előnézet -->
-                                    <div v-if="newInstallment.type === 'equal'" class="bg-slate-900/60 p-2.5 rounded-lg border border-slate-700 text-xs">
-                                        <span class="text-slate-400">Kiszámított havi részlet:</span>
-                                        <span class="text-orange-400 font-bold ml-1 font-mono text-sm">
-                                            {{ formatCurrency(calcEqualMonthly) }} / hó
-                                        </span>
-                                        <span class="text-[10px] text-slate-500 block mt-0.5">({{ newInstallment.months || 0 }} hónapon keresztül)</span>
-                                    </div>
-
-                                    <!-- 2. Első részlet különbözik mező és előnézet -->
-                                    <div v-else-if="newInstallment.type === 'first_different'" class="space-y-2 bg-slate-900/60 p-2.5 rounded-lg border border-slate-700">
-                                        <div>
-                                            <label class="text-[10px] uppercase text-slate-400 font-bold">Első részlet összege (RON)</label>
-                                            <input v-model.number="newInstallment.firstPayment" type="number" placeholder="pl. 400" class="glass-input input-orange w-full p-2 rounded text-xs mt-1">
-                                        </div>
-                                        <div class="text-xs pt-1 border-t border-slate-800">
-                                            <span class="text-slate-400">További havi részletek (2-{{ newInstallment.months || 0 }}. hó):</span>
-                                            <span class="text-orange-400 font-bold ml-1 font-mono text-sm">
-                                                {{ formatCurrency(calcRemainingEqualMonthly) }} / hó
-                                            </span>
-                                        </div>
-                                    </div>
-
-                                    <!-- 3. Változó részletek beviteli mezők -->
-                                    <div v-else-if="newInstallment.type === 'custom'" class="space-y-2 bg-slate-900/60 p-2.5 rounded-lg border border-slate-700 max-h-48 overflow-y-auto pr-1">
-                                        <div class="flex justify-between items-center text-xs">
-                                            <span class="text-slate-400 font-bold">Havi részletek összegei:</span>
-                                            <button type="button" @click="autoFillCustomEqually" class="text-[10px] text-orange-400 hover:text-orange-300 underline cursor-pointer">
-                                                Egyenletes elosztás
-                                            </button>
-                                        </div>
-                                        <div class="space-y-1.5">
-                                            <div v-for="(amt, cIdx) in newInstallment.customAmounts" :key="cIdx" class="flex items-center gap-2">
-                                                <span class="text-[11px] text-slate-400 w-16 font-mono">{{ cIdx + 1 }}. hónap:</span>
-                                                <input v-model.number="newInstallment.customAmounts[cIdx]" type="number" placeholder="RON" class="glass-input input-orange flex-1 p-1.5 rounded text-xs text-right font-mono">
-                                                <span class="text-[11px] text-slate-500">RON</span>
-                                            </div>
-                                        </div>
-                                        <div class="flex justify-between items-center text-[11px] pt-1 border-t border-slate-800">
-                                            <span class="text-slate-400">Beírt összeg:</span>
-                                            <span :class="customAmountsTotal === (newInstallment.totalAmount || 0) ? 'text-emerald-400 font-bold' : 'text-amber-400 font-bold'">
-                                                {{ formatCurrency(customAmountsTotal) }} / {{ formatCurrency(newInstallment.totalAmount || 0) }}
-                                            </span>
-                                        </div>
-                                    </div>
-
-                                    <button @click="addInstallment" class="w-full bg-orange-600 hover:bg-orange-500 text-white font-bold py-2.5 rounded-lg mt-2 transition shadow-lg shadow-orange-500/20 cursor-pointer">
-                                        Részlet indítása
-                                    </button>
+                            <!-- Kompakt Havi fizetendő és Hátralék a cím és gomb között -->
+                            <div class="flex items-center gap-3 sm:gap-4 bg-slate-800/60 px-4 py-2 rounded-xl border border-slate-700/60 shadow-sm flex-wrap">
+                                <div class="flex items-baseline gap-2">
+                                    <span class="text-[11px] font-bold uppercase text-slate-400 tracking-wider">Havi fizetendő:</span>
+                                    <span class="text-orange-400 font-bold font-mono text-lg">{{ formatCurrency(totalInstallments) }}</span>
+                                    <span class="text-[11px] text-slate-500 font-normal font-sans">/ hó</span>
+                                </div>
+                                <div v-if="grandTotalRemaining > 0" class="h-4 w-px bg-slate-700 hidden sm:block"></div>
+                                <div v-if="grandTotalRemaining > 0" class="flex items-baseline gap-1.5">
+                                    <span class="text-[10px] uppercase text-slate-400 font-medium">Hátralék:</span>
+                                    <span class="text-slate-300 font-mono text-xs font-semibold">{{ formatCurrency(grandTotalRemaining) }}</span>
                                 </div>
                             </div>
 
-                            <!-- Aktív részletfizetések listája -->
-                            <div class="lg:col-span-2">
-                                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-2">
-                                    <h4 class="text-xs font-bold text-slate-400 uppercase">Havi fizetendő ebben a hónapban</h4>
-                                    <div class="text-right">
-                                        <div class="text-orange-400 font-bold text-xl">{{ formatCurrency(totalInstallments) }} <span class="text-sm text-slate-500 font-normal">/ hó</span></div>
-                                        <div v-if="grandTotalRemaining > 0" class="text-[10px] text-slate-400 uppercase font-bold mt-1">
-                                            Teljes hátralék: <span class="text-slate-200">{{ formatCurrency(grandTotalRemaining) }}</span>
-                                        </div>
-                                    </div>
-                                </div>
+                            <!-- Csak "+" gomb tooltip-pel -->
+                            <button @click="showAddInstallmentModal = true" 
+                                    title="Új részlet felvétele" 
+                                    class="w-9 h-9 rounded-xl bg-orange-600/20 hover:bg-orange-600 text-orange-400 hover:text-white border border-orange-500/40 hover:border-orange-500 flex items-center justify-center transition-all duration-200 cursor-pointer shadow-sm group shrink-0">
+                                <i class="ph-bold ph-plus text-base group-hover:scale-110 transition-transform"></i>
+                            </button>
+                        </div>
 
-                                <div v-if="activeInstallments.length === 0" class="text-center py-10 border border-dashed border-slate-700 rounded-lg">
+                        <!-- Aktív részletek rácsa -->
+                        <div v-if="activeInstallments.length === 0" class="text-center py-10 border border-dashed border-slate-700 rounded-lg">
                                     <p class="text-slate-500 text-sm">Nincs aktív részletfizetés erre a hónapra.</p>
                                 </div>
 
@@ -611,8 +526,6 @@
                                         </button>
                                     </div>
                                 </div>
-                            </div>
-                        </div>
                     </div>
                 </div>
 
@@ -2026,6 +1939,101 @@
             
     </transition>
         <transition name="modal">
+    <!-- V47: Új Részletfizetés Felvétele Modal -->
+    <div v-if="showAddInstallmentModal" class="fixed inset-0 z-[100] flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-slate-900/80 backdrop-blur-sm animate-fade-in" @click="showAddInstallmentModal = false"></div>
+        <div class="glass modal-content w-full max-w-lg rounded-2xl p-6 relative z-10 shadow-2xl border border-orange-500/30 bg-slate-900 flex flex-col max-h-[90vh] animate-slide-up">
+            <div class="flex justify-between items-center mb-5 pb-3 border-b border-slate-800">
+                <h3 class="text-xl font-bold text-white flex items-center gap-2 text-orange-400">
+                    <i class="ph-bold ph-plus-circle"></i> Új törlesztő felvétele
+                </h3>
+                <button @click="showAddInstallmentModal = false" class="text-slate-400 hover:text-white transition p-1.5 rounded-lg hover:bg-slate-800"><i class="ph-bold ph-x text-xl"></i></button>
+            </div>
+            
+            <div class="overflow-y-auto space-y-4 pr-1 custom-scrollbar">
+                <div>
+                    <label class="text-[10px] uppercase text-slate-400 font-bold tracking-wider">Megnevezés</label>
+                    <input v-model="newInstallment.name" placeholder="pl. Hűtőgép, TV, Laptop" class="glass-input input-orange w-full p-2.5 rounded-lg text-sm mt-1 bg-slate-800/60">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="text-[10px] uppercase text-slate-400 font-bold tracking-wider">Teljes összeg</label>
+                        <input v-model.number="newInstallment.totalAmount" type="number" placeholder="pl. 1000" class="glass-input input-orange w-full p-2.5 rounded-lg text-sm mt-1 bg-slate-800/60 font-mono">
+                    </div>
+                    <div>
+                        <label class="text-[10px] uppercase text-slate-400 font-bold tracking-wider">Futamidő (hónap)</label>
+                        <input v-model.number="newInstallment.months" type="number" min="1" max="60" placeholder="pl. 4" class="glass-input input-orange w-full p-2.5 rounded-lg text-sm mt-1 bg-slate-800/60 font-mono">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="text-[10px] uppercase text-slate-400 font-bold tracking-wider">Részlet típusa</label>
+                    <select v-model="newInstallment.type" class="glass-input input-orange w-full p-2.5 rounded-lg text-sm mt-1 bg-slate-800 text-white cursor-pointer border border-slate-700">
+                        <option value="equal">Egyenlő részletekből áll</option>
+                        <option value="first_different">Első részlet különbözik</option>
+                        <option value="custom">Változó részletek (egyéni)</option>
+                    </select>
+                </div>
+
+                <!-- 1. Egyenlő részletek előnézet -->
+                <div v-if="newInstallment.type === 'equal'" class="bg-slate-800/60 p-3 rounded-xl border border-slate-700/60 text-xs">
+                    <span class="text-slate-400">Kiszámított havi részlet:</span>
+                    <span class="text-orange-400 font-bold ml-1 font-mono text-sm">
+                        {{ formatCurrency(calcEqualMonthly) }} / hó
+                    </span>
+                    <span class="text-[10px] text-slate-500 block mt-0.5">({{ newInstallment.months || 0 }} hónapon keresztül)</span>
+                </div>
+
+                <!-- 2. Első részlet különbözik mező és előnézet -->
+                <div v-else-if="newInstallment.type === 'first_different'" class="space-y-2 bg-slate-800/60 p-3 rounded-xl border border-slate-700/60">
+                    <div>
+                        <label class="text-[10px] uppercase text-slate-400 font-bold">Első részlet összege (RON)</label>
+                        <input v-model.number="newInstallment.firstPayment" type="number" placeholder="pl. 400" class="glass-input input-orange w-full p-2.5 rounded-lg text-xs mt-1 bg-slate-800 font-mono">
+                    </div>
+                    <div class="text-xs pt-1.5 border-t border-slate-700/60">
+                        <span class="text-slate-400">További havi részletek (2-{{ newInstallment.months || 0 }}. hó):</span>
+                        <span class="text-orange-400 font-bold ml-1 font-mono text-sm">
+                            {{ formatCurrency(calcRemainingEqualMonthly) }} / hó
+                        </span>
+                    </div>
+                </div>
+
+                <!-- 3. Változó részletek beviteli mezők -->
+                <div v-else-if="newInstallment.type === 'custom'" class="space-y-2 bg-slate-800/60 p-3 rounded-xl border border-slate-700/60 max-h-48 overflow-y-auto pr-1 custom-scrollbar">
+                    <div class="flex justify-between items-center text-xs">
+                        <span class="text-slate-400 font-bold">Havi részletek összegei:</span>
+                        <button type="button" @click="autoFillCustomEqually" class="text-[10px] text-orange-400 hover:text-orange-300 underline cursor-pointer">
+                            Egyenletes elosztás
+                        </button>
+                    </div>
+                    <div class="space-y-1.5">
+                        <div v-for="(amt, cIdx) in newInstallment.customAmounts" :key="cIdx" class="flex items-center gap-2">
+                            <span class="text-[11px] text-slate-400 w-16 font-mono">{{ cIdx + 1 }}. hónap:</span>
+                            <input v-model.number="newInstallment.customAmounts[cIdx]" type="number" placeholder="RON" class="glass-input input-orange flex-1 p-1.5 rounded text-xs text-right font-mono bg-slate-800">
+                            <span class="text-[11px] text-slate-500">RON</span>
+                        </div>
+                    </div>
+                    <div class="flex justify-between items-center text-[11px] pt-1.5 border-t border-slate-700/60">
+                        <span class="text-slate-400">Beírt összeg:</span>
+                        <span :class="customAmountsTotal === (newInstallment.totalAmount || 0) ? 'text-emerald-400 font-bold' : 'text-amber-400 font-bold'">
+                            {{ formatCurrency(customAmountsTotal) }} / {{ formatCurrency(newInstallment.totalAmount || 0) }}
+                        </span>
+                    </div>
+                </div>
+
+                <div class="pt-3 flex gap-3 border-t border-slate-800">
+                    <button type="button" @click="showAddInstallmentModal = false" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold py-2.5 rounded-lg transition border border-slate-700 cursor-pointer text-sm">
+                        Mégse
+                    </button>
+                    <button type="button" @click="addInstallment" class="flex-1 bg-orange-600 hover:bg-orange-500 text-white font-bold py-2.5 rounded-lg transition shadow-lg shadow-orange-500/20 cursor-pointer text-sm flex items-center justify-center gap-2">
+                        <i class="ph-bold ph-check"></i> Részlet indítása
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    </transition>
+    <transition name="modal">
     <!-- V44: Szolgáltató (Számla) Részletek Modal -->
     <div v-if="showProviderDetailsModal" class="fixed inset-0 z-[100] flex items-center justify-center p-4">
         <div class="absolute inset-0 bg-slate-900/80 backdrop-blur-sm animate-fade-in" @click="showProviderDetailsModal = false"></div>
@@ -2976,6 +2984,7 @@
 
             const newProvider = ref({ name: '', color: '#6366f1' });
             // V30: Részletfizetések bővített állapota
+            const showAddInstallmentModal = ref(false);
             const newInstallment = ref({
                 name: '',
                 totalAmount: '',
@@ -4626,6 +4635,7 @@
                         firstPayment: '',
                         customAmounts: []
                     };
+                    showAddInstallmentModal.value = false;
                 } catch (e) {
                     console.error("Hiba a részletfizetés létrehozásakor:", e);
                     alert("Hiba: " + e.message);
@@ -5953,7 +5963,7 @@
                 formattedMonth, changeMonth, monthlyIncome, saveIncome,
                 processedProviders, addBill, deleteBill,
                 totalObligations, remainingMoney, billsPercentage, formatCurrency,
-                newInstallment, addInstallment, deleteInstallment,
+                showAddInstallmentModal, newInstallment, addInstallment, deleteInstallment,
                 activeInstallments, totalInstallments, grandTotalRemaining,
                 // V30: Részletfizetések új exportjai
                 calcEqualMonthly, calcRemainingEqualMonthly, customAmountsTotal, autoFillCustomEqually,
