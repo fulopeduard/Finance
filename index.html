@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Money manager v40 | Napi Kerettel</title>
+    <title>Money manager V46</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💵</text></svg>">
 
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -12,6 +13,7 @@
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
 
     <style>
+
         body { font-family: 'Manrope', sans-serif; background-color: #0f172a; color: #e2e8f0; }
         .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.08); }
         .glass-input { background: rgba(15, 23, 42, 0.6); border: 1px solid #334155; color: white; transition: all 0.2s; }
@@ -39,9 +41,145 @@
             70% { box-shadow: 0 0 0 10px rgba(99, 102, 241, 0); }
             100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0); }
         }
+    
+/* V46 Premium Loader Styles */
+        .premium-loader-bg {
+            background-color: #030712;
+            background-image: radial-gradient(circle at 50% 45%, rgba(16, 185, 129, 0.04) 0%, transparent 60%);
+        }
+        
+        .premium-logo-container {
+            position: relative;
+            width: 44px;
+            height: 44px;
+            margin: 0 auto 32px auto;
+        }
+
+        .premium-shape {
+            position: absolute;
+            inset: 0;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 12px;
+            transform: rotate(45deg);
+            animation: pulse-shape 3s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+        }
+        
+        .premium-shape-inner {
+            position: absolute;
+            inset: 6px;
+            border: 1px solid transparent;
+            border-radius: 8px;
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.9) 0%, rgba(5, 150, 105, 0.1) 100%) border-box;
+            -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            transform: rotate(45deg);
+            animation: spin-shape 6s linear infinite;
+        }
+        
+        @keyframes pulse-shape {
+            0%, 100% { transform: rotate(45deg) scale(1); border-color: rgba(16, 185, 129, 0.05); box-shadow: 0 0 15px rgba(16, 185, 129, 0.0); }
+            50% { transform: rotate(45deg) scale(1.05); border-color: rgba(16, 185, 129, 0.4); box-shadow: 0 0 30px rgba(16, 185, 129, 0.15); }
+        }
+
+        @keyframes spin-shape {
+            0% { transform: rotate(45deg); }
+            100% { transform: rotate(405deg); }
+        }
+
+        .premium-text {
+            font-family: 'Manrope', sans-serif;
+            font-size: 1.15rem;
+            font-weight: 300;
+            letter-spacing: 0.4em;
+            text-transform: uppercase;
+            color: #ffffff;
+            margin-left: 0.4em; /* centering offset for tracking */
+            background: linear-gradient(to right, #475569 0%, #e2e8f0 45%, #ffffff 50%, #e2e8f0 55%, #475569 100%);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: shine 3.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+        }
+        
+        @media (min-width: 768px) {
+            .premium-text { font-size: 1.5rem; }
+            .premium-logo-container { width: 54px; height: 54px; margin-bottom: 40px; }
+        }
+
+        @keyframes shine {
+            0% { background-position: 200% center; }
+            100% { background-position: -200% center; }
+        }
+
+        .premium-version {
+            margin-top: 40px;
+            font-size: 0.65rem;
+            letter-spacing: 0.25em;
+            color: #64748b;
+            font-weight: 500;
+            border: 1px solid rgba(100, 116, 139, 0.15);
+            padding: 5px 16px;
+            border-radius: 100px;
+            background: rgba(15, 23, 42, 0.4);
+            backdrop-filter: blur(8px);
+            margin-left: 0.25em; /* balancing tracking */
+        }
+        
+        .premium-progress-bar {
+            width: 140px;
+            height: 1px;
+            background: rgba(255, 255, 255, 0.06);
+            margin: 32px auto 0;
+            position: relative;
+            overflow: hidden;
+            border-radius: 2px;
+        }
+        
+        .premium-progress-value {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            width: 30%;
+            background: #10b981;
+            box-shadow: 0 0 10px #10b981, 0 0 5px #10b981;
+            animation: progress-slide 2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+        }
+        
+        @keyframes progress-slide {
+            0% { left: -30%; }
+            100% { left: 100%; }
+        }
     </style>
 </head>
 <body>
+    <!-- V46: Premium Global Loading Screen -->
+    <div id="global-loader" class="fixed inset-0 z-[9999] premium-loader-bg flex flex-col items-center justify-center transition-opacity duration-1000">
+        <div class="premium-logo-container">
+            <div class="premium-shape"></div>
+            <div class="premium-shape-inner"></div>
+        </div>
+        
+        <div class="premium-text select-none text-center">
+            Money Manager
+        </div>
+        
+        <div class="premium-progress-bar">
+            <div class="premium-progress-value"></div>
+        </div>
+
+        <div class="premium-version" id="loader-version">
+            V--
+        </div>
+    </div>
+    <script>
+        const titleMatch = document.title.match(/V\d+/i);
+        if (titleMatch) {
+            document.getElementById('loader-version').innerText = titleMatch[0].toUpperCase();
+        }
+    </script>
+
 
 <div id="app" v-cloak class="min-h-screen flex flex-col">
 
@@ -72,7 +210,7 @@
             <div class="p-6 border-b border-slate-700/50">
                 <div class="flex items-center justify-between">
                     <h2 class="text-xl font-bold text-white">Money<span class="text-indigo-500"> manager</span></h2>
-                    <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-bold">v40</span>
+                    <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-bold">v46</span>
                 </div>
                 <p class="text-xs text-slate-500 mt-1">{{ user.email }}</p>
             </div>
@@ -108,7 +246,7 @@
         <div class="md:hidden fixed top-0 w-full glass z-50 p-4 flex justify-between items-center">
             <div class="flex items-center gap-2">
                 <span class="font-bold text-lg">Money manager</span>
-                <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-bold">v40</span>
+                <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-bold">v46</span>
             </div>
             <div class="flex gap-3 items-center">
                 <button @click="currentView = 'dashboard'" :class="currentView === 'dashboard' ? 'text-indigo-400' : 'text-slate-400'" title="Áttekintés"><i class="ph-bold ph-chart-pie-slice text-2xl"></i></button>
@@ -131,74 +269,71 @@
                         <span class="font-bold text-lg uppercase tracking-wide w-32 text-center">{{ formattedMonth }}</span>
                         <button @click="changeMonth(1)" class="text-slate-400 hover:text-white"><i class="ph-bold ph-caret-right text-xl"></i></button>
                     </div>
-                    <!-- V21: Havi keret és alatta a Szabadon elkölthető összeg (Minden menüben látható) -->
-                    <div class="glass px-3.5 py-2 rounded-xl border border-slate-700/60 flex flex-col gap-1.5 shadow-md hover:border-slate-600 transition min-w-[240px]">
-                        <!-- Havi keret -->
-                        <div class="flex items-center justify-between gap-3 cursor-pointer group" @click="currentView = 'income'" title="Kattints a részletes bevételek és fix fizetések megnyitásához">
-                            <span class="text-slate-400 text-xs group-hover:text-indigo-300 transition flex items-center gap-1.5 font-medium">
-                                <i class="ph-bold ph-wallet text-indigo-400"></i> Havi keret:
-                            </span>
-                            <div class="flex items-center gap-1">
-                                <span class="font-bold text-emerald-400 text-sm font-mono">{{ formatCurrency(monthlyIncome) }}</span>
-                                <i class="ph-bold ph-arrow-right text-[10px] text-slate-500 group-hover:text-indigo-400 transition"></i>
+                    
+                    <!-- V41: Kompakt fejléc kártyák (Fizetés + Keret) -->
+                    <div class="flex flex-col sm:flex-row items-stretch gap-3">
+                        <!-- Következő fizetés kompakt kártya -->
+                        <div class="glass px-3.5 py-2 rounded-xl border border-indigo-500/30 flex flex-col gap-1.5 shadow-md hover:border-indigo-500/50 transition cursor-pointer min-w-[160px] bg-indigo-900/10" @click="showSettingsModal = true" title="Fizetésnap módosítása">
+                            <div class="flex items-center justify-between gap-3">
+                                <span class="text-indigo-300 text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5">
+                                    <i class="ph-bold ph-calendar-check text-indigo-400"></i> Köv. fizetés:
+                                </span>
+                                <i class="ph-bold ph-pencil-simple text-slate-500 hover:text-indigo-300 transition text-[10px]"></i>
+                            </div>
+                            
+                            <div class="flex items-center justify-between gap-2 mt-0.5">
+                                <div class="flex items-baseline gap-1">
+                                    <span class="font-extrabold text-sm text-white">{{ paydayDisplay.date }}</span>
+                                </div>
+                                <div class="bg-indigo-500/20 px-1.5 py-0.5 rounded text-[10px] text-indigo-300 font-bold border border-indigo-500/30">
+                                    {{ paydayDisplay.daysLeft === 0 ? 'Ma!' : (paydayDisplay.daysLeft + ' nap') }}
+                                </div>
+                            </div>
+
+                            <!-- Finom elválasztó vonal -->
+                            <div class="border-t border-indigo-500/20 my-0.5"></div>
+
+                            <div class="flex items-center justify-between gap-2">
+                                <span class="text-slate-400 text-[10px] font-medium uppercase">Napi keret:</span>
+                                <span class="font-bold text-xs" :class="dailyBudget >= 0 ? 'text-white' : 'text-red-400'">
+                                    {{ formatCurrency(dailyBudget) }}
+                                </span>
                             </div>
                         </div>
 
-                        <!-- Finom elválasztó vonal -->
-                        <div class="border-t border-slate-700/50"></div>
-
-                        <!-- Szabadon elkölthető összeg (közvetlenül a havi keret alatt) -->
-                        <div class="flex items-center justify-between gap-3 cursor-pointer group" @click="currentView = 'dashboard'" title="Kattints az áttekintéshez (Szabadon elkölthető keret)">
-                            <span class="text-slate-400 text-xs group-hover:text-emerald-300 transition flex items-center gap-1.5 font-medium">
-                                <i class="ph-bold ph-sparkle text-emerald-400"></i> Szabadon elkölthető:
-                            </span>
-                            <div class="flex items-center gap-1">
-                                <span class="font-extrabold text-sm font-mono" :class="remainingMoney >= 0 ? 'text-emerald-400' : 'text-rose-400'">
-                                    {{ formatCurrency(remainingMoney) }}
+                        <!-- Havi keret és alatta a Szabadon elkölthető összeg (Minden menüben látható) -->
+                        <div class="glass px-3.5 py-2 rounded-xl border border-slate-700/60 flex flex-col gap-1.5 shadow-md hover:border-slate-600 transition min-w-[220px]">
+                            <!-- Havi keret -->
+                            <div class="flex items-center justify-between gap-3 cursor-pointer group" @click="currentView = 'income'" title="Kattints a részletes bevételek és fix fizetések megnyitásához">
+                                <span class="text-slate-400 text-xs group-hover:text-indigo-300 transition flex items-center gap-1.5 font-medium">
+                                    <i class="ph-bold ph-wallet text-indigo-400"></i> Havi keret:
                                 </span>
-                                <i class="ph-bold ph-arrow-right text-[10px] text-slate-500 group-hover:text-emerald-400 transition"></i>
+                                <div class="flex items-center gap-1">
+                                    <span class="font-bold text-emerald-400 text-sm font-mono">{{ formatCurrency(monthlyIncome) }}</span>
+                                    <i class="ph-bold ph-arrow-right text-[10px] text-slate-500 group-hover:text-indigo-400 transition"></i>
+                                </div>
+                            </div>
+
+                            <!-- Finom elválasztó vonal -->
+                            <div class="border-t border-slate-700/50"></div>
+
+                            <!-- Szabadon elkölthető összeg (közvetlenül a havi keret alatt) -->
+                            <div class="flex items-center justify-between gap-3 cursor-pointer group" @click="currentView = 'dashboard'" title="Kattints az áttekintéshez (Szabadon elkölthető keret)">
+                                <span class="text-slate-400 text-xs group-hover:text-emerald-300 transition flex items-center gap-1.5 font-medium">
+                                    <i class="ph-bold ph-sparkle text-emerald-400"></i> Szabadon elkölthető:
+                                </span>
+                                <div class="flex items-center gap-1">
+                                    <span class="font-extrabold text-sm font-mono" :class="remainingMoney >= 0 ? 'text-emerald-400' : 'text-rose-400'">
+                                        {{ formatCurrency(remainingMoney) }}
+                                    </span>
+                                    <i class="ph-bold ph-arrow-right text-[10px] text-slate-500 group-hover:text-emerald-400 transition"></i>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
                 <div v-if="currentView === 'dashboard'" class="space-y-6 animate-fade-in">
-
-                    <div class="glass p-0 rounded-xl border border-indigo-500/20 bg-indigo-900/10 overflow-hidden">
-                        <div class="p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-                            <div class="flex items-center gap-3">
-                                <div class="p-3 bg-indigo-500 rounded-lg text-white shadow-lg pulse-border">
-                                    <i class="ph-bold ph-money text-2xl"></i>
-                                </div>
-                                <div>
-                                    <div class="flex items-center gap-2">
-                                        <p class="text-xs text-indigo-300 font-bold uppercase tracking-wider">Következő fizetés</p>
-                                        <button @click="showSettingsModal = true" title="Fizetésnap testreszabása a Beállításokban" class="text-slate-400 hover:text-indigo-300 transition text-xs flex items-center gap-1 bg-indigo-950/60 px-1.5 py-0.5 rounded border border-indigo-500/20">
-                                            <i class="ph-bold ph-pencil-simple"></i>
-                                            <span class="text-[10px] hidden sm:inline">Módosítás</span>
-                                        </button>
-                                    </div>
-                                    <p class="text-white font-bold flex items-center gap-2">
-                                        {{ paydayDisplay.date }}
-                                        <span class="text-slate-400 font-normal text-sm">({{ paydayDisplay.dayName }})</span>
-                                    </p>
-                                </div>
-                            </div>
-                            <div class="flex items-center gap-2 bg-slate-900/50 px-4 py-2 rounded-lg border border-white/5">
-                                <span class="text-2xl font-bold text-white">{{ paydayDisplay.daysLeft === 0 ? 'Ma!' : paydayDisplay.daysLeft }}</span>
-                                <span class="text-sm text-slate-400">{{ paydayDisplay.daysLeft === 0 ? 'fizetésnap!' : 'nap van hátra' }}</span>
-                            </div>
-                        </div>
-
-                        <div class="bg-indigo-950/30 p-3 border-t border-indigo-500/20 flex justify-between items-center px-6">
-                            <span class="text-indigo-300 text-sm font-bold uppercase tracking-wider flex items-center">
-                                <i class="ph-bold ph-wallet mr-2"></i>Napi keret a fizetésig:
-                            </span>
-                            <span class="text-xl font-bold" :class="dailyBudget >= 0 ? 'text-white' : 'text-red-400'">
-                                {{ formatCurrency(dailyBudget) }} <span class="text-xs text-slate-400 font-normal">/ nap</span>
-                            </span>
-                        </div>
-                    </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div class="md:col-span-2 glass p-6 rounded-xl relative">
@@ -250,32 +385,22 @@
                         </div>
 
                         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            <div v-for="item in processedProviders" :key="item.provider.id" class="border border-slate-700 bg-slate-800/50 p-4 rounded-lg relative flex flex-col">
-                                <div class="absolute left-0 top-0 bottom-0 w-1" :style="{ backgroundColor: item.provider.color }"></div>
-                                <div class="flex justify-between items-start mb-3 pl-2">
-                                    <span class="font-bold text-slate-200">{{ item.provider.name }}</span>
-                                    <span class="text-xs font-mono px-2 py-1 rounded bg-slate-900 text-slate-300 shadow-sm border border-slate-700">{{ formatCurrency(item.totalAmount) }}</span>
-                                </div>
-                                <div class="space-y-1.5 pl-2 mb-2">
-                                    <div class="flex gap-2">
-                                        <input v-model.number="item.tempAmount" type="number" step="any" min="0.01" placeholder="Összeg" class="glass-input w-full p-2 rounded text-sm" @keyup.enter="addBill(item.provider.id, item.tempAmount, item.tempComment); item.tempAmount = ''; item.tempComment = ''">
-                                        <button @click="addBill(item.provider.id, item.tempAmount, item.tempComment); item.tempAmount = ''; item.tempComment = ''" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3 rounded flex items-center justify-center transition shadow-lg shadow-indigo-500/20" title="Számla hozzáadása"><i class="ph-bold ph-plus"></i></button>
-                                    </div>
-                                    <input v-model="item.tempComment" type="text" placeholder="Megjegyzés (opcionális)" class="glass-input w-full px-2.5 py-1 rounded text-xs text-slate-300 placeholder-slate-500" @keyup.enter="addBill(item.provider.id, item.tempAmount, item.tempComment); item.tempAmount = ''; item.tempComment = ''">
-                                </div>
-                                <div v-if="item.bills.length > 0" class="mt-auto pl-2 pt-3 border-t border-slate-700/50">
-                                    <div v-for="bill in item.bills" :key="bill.id" class="flex justify-between items-center text-xs py-1 group/bill">
-                                        <div class="flex items-center gap-1.5 truncate mr-2">
-                                            <span class="text-slate-300 font-medium">{{ formatCurrency(bill.amount) }}</span>
-                                            <span v-if="bill.comment" class="text-[11px] text-slate-400 truncate bg-slate-900/70 px-1.5 py-0.5 rounded border border-slate-700/50" :title="bill.comment">
-                                                {{ bill.comment }}
-                                            </span>
+                            <div v-for="item in processedProviders" :key="item.provider.id" @click="openProviderDetails(item.provider.id)" class="border border-slate-700 bg-slate-800/50 rounded-lg relative flex flex-col transition hover:border-slate-500 shadow-md cursor-pointer hover:shadow-indigo-500/10 group">
+                                <div class="absolute left-0 top-0 bottom-0 w-1.5 rounded-l-lg z-10" :style="{ backgroundColor: item.provider.color }"></div>
+                                <div class="flex justify-between items-center p-4 pl-5">
+                                    <span class="font-bold text-slate-200 text-lg truncate pr-2">{{ item.provider.name }}</span>
+                                    <div class="flex items-center gap-4 shrink-0">
+                                        <span class="text-xl font-black font-mono tracking-wider drop-shadow-md" :style="{ color: getProviderColor(item.totalAmount) }">
+                                            {{ formatCurrency(item.totalAmount) }}
+                                        </span>
+                                        <div class="w-8 h-8 rounded-full bg-slate-700/50 group-hover:bg-indigo-600/20 flex items-center justify-center transition-colors">
+                                            <i class="ph-bold ph-arrow-up-right text-slate-400 group-hover:text-indigo-400 transition-colors"></i>
                                         </div>
-                                        <button @click="deleteBill(bill.id)" class="text-red-400 opacity-0 group-hover/bill:opacity-100 shrink-0 transition" title="Törlés"><i class="ph-bold ph-trash"></i></button>
                                     </div>
                                 </div>
                             </div>
-                            <div v-if="providers.length === 0" class="col-span-full text-center p-8 text-slate-500 border border-dashed border-slate-700 rounded-lg">
+                            
+                            <div v-if="providers.length === 0" class="col-span-full text-center p-8 text-slate-500 border border-dashed border-slate-700 rounded-lg bg-slate-800/30">
                                 Még nincsenek szolgáltatók. Kattints a "Szolgáltatók kezelése" gombra a hozzáadáshoz!
                             </div>
                         </div>
@@ -1898,7 +2023,101 @@
         </main>
 
         <transition name="modal">
-            <div v-if="showProviderModal" class="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            
+    </transition>
+        <transition name="modal">
+    <!-- V44: Szolgáltató (Számla) Részletek Modal -->
+    <div v-if="showProviderDetailsModal" class="fixed inset-0 z-[100] flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-slate-900/80 backdrop-blur-sm animate-fade-in" @click="showProviderDetailsModal = false"></div>
+        <div class="bg-slate-800 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden relative animate-slide-up border border-slate-700 flex flex-col max-h-[90vh]">
+            <div v-if="activeProviderDetails">
+                <!-- Header -->
+                <div class="p-5 border-b border-slate-700 flex justify-between items-center bg-slate-800/80 sticky top-0 z-10">
+                    <div class="flex items-center gap-3">
+                        <div class="w-3 h-8 rounded-full" :style="{ backgroundColor: activeProviderDetails.provider.color }"></div>
+                        <div>
+                            <h2 class="text-xl font-bold text-white leading-tight">{{ activeProviderDetails.provider.name }}</h2>
+                            <p class="text-xs text-slate-400">Részletek és előzmények</p>
+                        </div>
+                    </div>
+                    <button @click="showProviderDetailsModal = false" class="text-slate-400 hover:text-white transition p-2 rounded-full hover:bg-slate-700 bg-slate-800 shadow-sm"><i class="ph-bold ph-x text-xl"></i></button>
+                </div>
+
+                <div class="p-5 overflow-y-auto space-y-6">
+                    <!-- Aktuális Hónap Szekció -->
+                    <div>
+                        <div class="flex justify-between items-end mb-3">
+                            <h3 class="text-sm font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
+                                <i class="ph-bold ph-calendar-star text-indigo-400"></i> Aktuális Hónap
+                            </h3>
+                            <span class="text-lg font-black font-mono" :style="{ color: getProviderColor(activeProviderDetails.totalAmount) }">
+                                {{ formatCurrency(activeProviderDetails.totalAmount) }}
+                            </span>
+                        </div>
+
+                        <!-- Beviteli mezők -->
+                        <div class="bg-slate-900/50 p-4 rounded-xl border border-slate-700/50 mb-4 shadow-inner">
+                            <div class="flex gap-2 mb-2">
+                                <input v-model.number="modalTempAmount" type="number" step="any" min="0.01" placeholder="Összeg" class="glass-input w-full p-2.5 rounded-lg text-sm bg-slate-800/80 border border-slate-700 focus:border-indigo-500/50" @keyup.enter="addModalBill">
+                                <button @click="addModalBill" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 rounded-lg flex items-center justify-center transition shadow-lg shadow-indigo-500/20" title="Hozzáadás"><i class="ph-bold ph-plus text-lg"></i></button>
+                            </div>
+                            <input v-model="modalTempComment" type="text" placeholder="Megjegyzés (opcionális)" class="glass-input w-full p-2.5 rounded-lg text-sm text-slate-300 placeholder-slate-500 bg-slate-800/80 border border-slate-700 focus:border-indigo-500/50" @keyup.enter="addModalBill">
+                        </div>
+
+                        <!-- Tételek lista -->
+                        <div v-if="activeProviderDetails.bills.length > 0" class="space-y-1.5">
+                            <div class="flex justify-between items-center text-[10px] text-slate-500 font-bold uppercase mb-1 px-2">
+                                <span>Dátum</span>
+                                <span>Összeg</span>
+                            </div>
+                            <div v-for="bill in activeProviderDetails.bills" :key="bill.id" class="flex justify-between items-center bg-slate-800/80 pl-3 pr-2 py-2 rounded-lg border border-slate-700/80 group/bill hover:border-slate-600 transition shadow-sm">
+                                <div class="flex flex-col">
+                                    <span class="text-slate-200 text-xs font-medium">{{ formatBillDate(bill.createdAt) }}</span>
+                                    <span v-if="bill.comment" class="text-[11px] text-slate-400 italic mt-0.5">{{ bill.comment }}</span>
+                                </div>
+                                <div class="flex items-center gap-3">
+                                    <span class="text-slate-200 text-sm font-mono font-bold tracking-wide" :style="{ color: getProviderColor(bill.amount) }">{{ formatCurrency(bill.amount) }}</span>
+                                    <button @click="deleteBill(bill.id)" class="text-red-400 opacity-0 group-hover/bill:opacity-100 transition hover:text-red-300 p-1.5 bg-red-400/10 hover:bg-red-400/20 rounded" title="Törlés"><i class="ph-bold ph-trash"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                        <div v-else class="text-center p-4 border border-dashed border-slate-700/50 rounded-lg text-slate-500 text-sm bg-slate-800/30">
+                            Ebben a hónapban még nincs rögzített tétel.
+                        </div>
+                    </div>
+
+                    <!-- Előzmények (History) Szekció -->
+                    <div class="pt-4 border-t border-slate-700/50">
+                        <h3 class="text-sm font-bold text-slate-300 uppercase tracking-wider mb-4 flex items-center gap-2">
+                            <i class="ph-bold ph-clock-counter-clockwise text-slate-400"></i> Korábbi Hónapok
+                        </h3>
+                        
+                        <div v-if="isLoadingHistory" class="flex justify-center p-6">
+                            <div class="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+                        </div>
+                        
+                        <div v-else-if="providerHistory.length > 0" class="space-y-2">
+                            <div v-for="hist in providerHistory" :key="hist.monthKey" class="flex justify-between items-center bg-slate-800/40 p-3 rounded-lg border border-slate-700/30 hover:border-slate-600 transition-colors">
+                                <span class="text-slate-300 font-medium capitalize">{{ formatHistoryMonth(hist.monthKey) }}</span>
+                                <span class="font-mono font-bold" :style="{ color: getProviderColor(hist.totalAmount) }">
+                                    {{ formatCurrency(hist.totalAmount) }}
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <div v-else class="text-center p-4 border border-slate-700/30 rounded-lg text-slate-500 text-sm bg-slate-800/20">
+                            Nincs korábbi adat (vagy 0 Ft volt).
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    </transition>
+        <transition name="modal">
+        <div v-if="showProviderModal"
+ class="fixed inset-0 z-[100] flex items-center justify-center p-4">
                 <div class="absolute inset-0 bg-slate-900/80 backdrop-blur-sm" @click="showProviderModal = false"></div>
                 <div class="glass modal-content w-full max-w-lg rounded-2xl p-6 relative z-10 shadow-2xl border border-indigo-500/30">
                     <div class="flex justify-between items-center mb-6">
@@ -3447,6 +3666,15 @@
                 } else { 
                     resetData(); 
                 }
+                
+                // V46: Hide global loader smoothly once Vue and Auth are ready
+                setTimeout(() => {
+                    const loader = document.getElementById('global-loader');
+                    if (loader) {
+                        loader.style.opacity = '0';
+                        setTimeout(() => loader.remove(), 1000); // 1s fade for premium feel
+                    }
+                }, 1500); // Wait 1.5s so user can appreciate the premium loader
             });
 
             const handleAuth = async () => {
@@ -4179,6 +4407,107 @@
                 newProvider.value = { name: '', color: '#6366f1' };
             };
             const deleteProvider = async (id) => { if(confirm('Törlöd ezt a szolgáltatót?')) await deleteDoc(doc(db, `users/${user.value.uid}/providers`, id)); };
+
+            
+            const showProviderDetailsModal = ref(false);
+            const activeProviderId = ref(null);
+            const modalTempAmount = ref('');
+            const modalTempComment = ref('');
+            const providerHistory = ref([]);
+            const isLoadingHistory = ref(false);
+
+            const activeProviderDetails = computed(() => {
+                if (!activeProviderId.value || !processedProviders.value) return null;
+                return processedProviders.value.find(p => p.provider.id === activeProviderId.value);
+            });
+
+            const formatHistoryMonth = (monthKey) => {
+                if (!monthKey) return '';
+                const parts = monthKey.split('-');
+                if (parts.length !== 2) return monthKey;
+                const d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, 1);
+                return d.toLocaleDateString('hu-HU', { year: 'numeric', month: 'long' });
+            };
+
+            const openProviderDetails = async (id) => {
+                activeProviderId.value = id;
+                modalTempAmount.value = '';
+                modalTempComment.value = '';
+                providerHistory.value = [];
+                showProviderDetailsModal.value = true;
+                isLoadingHistory.value = true;
+                
+                try {
+                    const qHistory = query(collection(db, `users/${user.value.uid}/bills`), where("providerId", "==", id));
+                    const snap = await getDocs(qHistory);
+                    const historyMap = {};
+                    
+                    snap.forEach(d => {
+                        const data = d.data();
+                        if (data.monthKey === currentMonthKey.value) return; // Skip current month
+                        if (!historyMap[data.monthKey]) historyMap[data.monthKey] = 0;
+                        historyMap[data.monthKey] += data.amount || 0;
+                    });
+                    
+                    const histArray = Object.keys(historyMap).map(key => ({
+                        monthKey: key,
+                        totalAmount: historyMap[key]
+                    })).filter(h => h.totalAmount > 0).sort((a, b) => b.monthKey.localeCompare(a.monthKey));
+                    
+                    providerHistory.value = histArray;
+                } catch(e) {
+                    console.error("Hiba a történet betöltésekor:", e);
+                } finally {
+                    isLoadingHistory.value = false;
+                }
+            };
+
+            const addModalBill = async () => {
+                if (!activeProviderId.value || !modalTempAmount.value) return;
+                await addBill(activeProviderId.value, modalTempAmount.value, modalTempComment.value);
+                modalTempAmount.value = '';
+                modalTempComment.value = '';
+            };
+
+            const expandedProviders = ref({});
+            const toggleProvider = (id) => {
+                expandedProviders.value[id] = !expandedProviders.value[id];
+            };
+
+            const formatBillDate = (val) => {
+                if (!val) return 'Új';
+                try {
+                    let dateObj = null;
+                    if (val && typeof val.toDate === 'function') {
+                        dateObj = val.toDate();
+                    } else if (val && val.seconds) {
+                        dateObj = new Date(val.seconds * 1000);
+                    } else {
+                        dateObj = new Date(val);
+                    }
+                    if (isNaN(dateObj.getTime())) return 'Új';
+                    return dateObj.toLocaleDateString('hu-HU', { month: 'short', day: 'numeric' });
+                } catch(e) {
+                    return 'Új';
+                }
+            };
+
+            const getProviderColor = (amount) => {
+                if (!processedProviders.value || processedProviders.value.length === 0) return '#94a3b8';
+                
+                const amounts = processedProviders.value.map(p => p.totalAmount).filter(a => a > 0);
+                if (amounts.length === 0 || amount === 0) return '#94a3b8'; // Szürke, ha nincs összeg
+                
+                const minAmount = Math.min(...amounts);
+                const maxAmount = Math.max(...amounts);
+                
+                if (minAmount === maxAmount) return '#fb923c'; // Narancs, ha minden összeg egyenlő
+                
+                const ratio = (amount - minAmount) / (maxAmount - minAmount);
+                // Színátmenet: 120 (Zöld) -> 0 (Piros)
+                const hue = 120 * (1 - ratio);
+                return `hsl(${hue}, 90%, 65%)`;
+            };
 
             const addBill = async (pId, amt, comment = '') => {
                 if(!amt) return;
@@ -5640,7 +5969,7 @@
                 showDeleteModal, deleteModalData, deleteReason, confirmDeletePayment, confirmDeleteShared, executeDeletion, restoreSharedItem, formatDateTime, updateSharedChart,
 
                 sortedNotes, newNoteContent, processNoteInput, toggleTodo, deleteNote,
-allNoteCategories, customCategories, showCategoryManagerModal, editingCategory, saveCategory, deleteCategory, startEditCategory, selectedNoteCategory, showCategoryDropdown, categorySearch, filteredNoteCategories, getCategoryDetails, expensesByCategory, selectManualCategory,
+allNoteCategories, customCategories, showCategoryManagerModal, editingCategory, saveCategory, deleteCategory, startEditCategory, selectedNoteCategory, showCategoryDropdown, categorySearch, filteredNoteCategories, getCategoryDetails, expensesByCategory, selectManualCategory, getProviderColor, formatBillDate, showProviderDetailsModal, activeProviderDetails, modalTempAmount, modalTempComment, providerHistory, isLoadingHistory, formatHistoryMonth, openProviderDetails, addModalBill,
                 hoveredSlice, svgPieSlices, showEmojiPicker, popularEmojis, allCategoriesList, editingNoteId, editingNoteContent, editingNoteCategoryId, startEditNote, cancelEditNote, saveEditNote,
                 getNoteAmounts, notesStats, baseRemainingMoney,
                 paydayDisplay, dailyBudget,
